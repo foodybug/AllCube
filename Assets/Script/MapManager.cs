@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -264,14 +264,14 @@ public class MapManager : MonoBehaviour
 		{
 			AudioManager.Instance.Play( "Sound/fail", 0.3f);
 			UIManager.Instance.textNext.text = "Retry";
-			UIManager.Instance.texNext.mainTexture = Resources.Load( "UI/retry_bg") as Texture;
+			UIManager.Instance.texNext.texture = Resources.Load( "UI/retry_bg") as Texture;
 			UIManager.Instance.texResultIcon.enabled = false;
 			UIManager.Instance.textResultTime.enabled = false;
 		}
 		else
 		{
 			AudioManager.Instance.Play( "Sound/clear");
-			UIManager.Instance.texNext.mainTexture = Resources.Load( "UI/done_bg") as Texture;
+			UIManager.Instance.texNext.texture = Resources.Load( "UI/done_bg") as Texture;
 
 			if( GameMain.Instance.nCurLevel == GameMain.Instance.nLevelCount)
 				UIManager.Instance.textNext.text = "Clear!";
@@ -285,11 +285,11 @@ public class MapManager : MonoBehaviour
 			int nSec = UIManager.Instance.nGameTime % 60;
 			UIManager.Instance.textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
 			if( UIManager.eLevelClearType.eLevelClearType_Gold == UIManager.Instance.eClearType)
-				UIManager.Instance.texResultIcon.mainTexture = Resources.Load( "UI/ui_time_gold") as Texture;
+				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
 			else if( UIManager.eLevelClearType.eLevelClearType_Silver == UIManager.Instance.eClearType)
-				UIManager.Instance.texResultIcon.mainTexture = Resources.Load( "UI/ui_time_silver") as Texture;
+				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
 			else
-				UIManager.Instance.texResultIcon.mainTexture = Resources.Load( "UI/ui_time_bronze") as Texture;
+				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
 			// result >
 
 			if( 0 == GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1])
