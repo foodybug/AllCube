@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class LevelSelect : MonoBehaviour
 {
-	public UITexture texBg;
-	public UILabel textLevel;
+	public RawImage texBg;
+	public Text textLevel;
 	public int nLevel = 1;
 
 	void Start()
@@ -30,21 +31,21 @@ public class LevelSelect : MonoBehaviour
 	{
 		if( LevelSelecter.eLevelSelectBtnState.eLevelSelectBtnState_Lock == eState)
 		{
-			texBg.mainTexture = Resources.Load( "UI/ui_lock") as Texture;
+			texBg.texture = Resources.Load( "UI/ui_lock") as Texture;
 			textLevel.text = "";
 			nLevel = nLv;
 			_BtnEnable( false);
 		}
 		else if( LevelSelecter.eLevelSelectBtnState.eLevelSelectBtnState_Clear == eState)
 		{
-			texBg.mainTexture = _GetLevelClearTexture( nLv);
+			texBg.texture = _GetLevelClearTexture( nLv);
 			textLevel.text = nLv.ToString();
 			nLevel = nLv;
 			_BtnEnable( true);
 		}
 		else
 		{
-			texBg.mainTexture = Resources.Load( "UI/ui_cur") as Texture;
+			texBg.texture = Resources.Load( "UI/ui_cur") as Texture;
 			textLevel.text = nLv.ToString();
 			nLevel = nLv;
 			_BtnEnable( true);
@@ -53,17 +54,15 @@ public class LevelSelect : MonoBehaviour
 
 	private void _BtnEnable(bool bEnable)
 	{
-		UIButton btn = gameObject.GetComponent<UIButton>();
-		btn.enabled = bEnable;
+		Button btn = gameObject.GetComponent<Button>();
+		btn.interactable = bEnable;
 
 		if( true == bEnable)
 		{
-			btn.SetState( UIButtonColor.State.Normal, true);
 			textLevel.color = Color.white;
 		}
 		else
 		{
-			btn.SetState( UIButtonColor.State.Disabled, true);
 			textLevel.color = Color.gray;
 		}
 	}

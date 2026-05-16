@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class Player : MonoBehaviour
@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
 	private float moveX = 0.0f;
 	private bool AllowAddForce { get { return forceWait < 0.0f;}}
 	private float moveCubeForce = 5.0f;
+	private float nextJumpDir = 1.0f;
 	
 	void Start()
 	{
@@ -34,12 +35,10 @@ public class Player : MonoBehaviour
 		
 		if( true == AllowAddForce)
 		{
-			float x = 0;
+			bool bInput = false;
 			
-			if( Input.GetKeyDown( KeyCode.RightArrow))
-				x = 1;
-			else if( Input.GetKeyDown( KeyCode.LeftArrow))
-				x = -1;
+			if( Input.GetKeyDown( KeyCode.RightArrow) || Input.GetKeyDown( KeyCode.LeftArrow) || Input.GetKeyDown( KeyCode.Space))
+				bInput = true;
 
 			if( Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
 			{
@@ -49,11 +48,14 @@ public class Player : MonoBehaviour
 				{
 				}
 				else
-					x = Mathf.Sign( Input.touches[0].position.x - Screen.width * 0.5f);
+					bInput = true;
 			}
 
-			if( x != 0)
-				moveX = x;
+			if( bInput)
+			{
+				moveX = nextJumpDir;
+				nextJumpDir *= -1.0f;
+			}
 		}
 	}
 	
@@ -91,7 +93,7 @@ public class Player : MonoBehaviour
 		CubeBreak cubeBreak = collision.gameObject.GetComponent<CubeBreak>();
 		if( null != cubeBreak)
 		{
-			if( GetComponent<Rigidbody>().velocity.x > 1.0f || GetComponent<Rigidbody>().velocity.y > 1.0f)
+			if( GetComponent<Rigidbody>().linearVelocity.x > 1.0f || GetComponent<Rigidbody>().linearVelocity.y > 1.0f)
 			{
 				//Debug.Log( "OnTriggerEnter: Cube: " + rigidbody.velocity);
 				if( cubeBreak.CollisionCube() <= 0)

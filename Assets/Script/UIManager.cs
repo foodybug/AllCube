@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class UIManager : MonoBehaviour
@@ -27,29 +28,29 @@ public class UIManager : MonoBehaviour
 	public eLevelClearType eClearType = eLevelClearType.eLevelClearType_None;
 
 	public Camera uiCamera;
-	public UITexture texLogo;
-	public UILabel textPlayInfo;
-	public UILabel textTime;
-	public UILabel textTouchScreen;
-	public UITexture textSelectLevel;
-	public UIButton btnNext;
-	public UILabel textNext;
-	public UITexture texNext;
-	public UILabel textResultTime;
-	public UITexture texResultIcon;
-	public UITexture texNextBtnBg;
-	public UIButton btnBack;
+	public RawImage texLogo;
+	public Text textPlayInfo;
+	public Text textTime;
+	public Text textTouchScreen;
+	public RawImage textSelectLevel;
+	public Button btnNext;
+	public Text textNext;
+	public RawImage texNext;
+	public Text textResultTime;
+	public RawImage texResultIcon;
+	public RawImage texNextBtnBg;
+	public Button btnBack;
 	public GameObject goBtnSound;
 	public GameObject goBtnRetry;
 	public GameObject goMsgBox;
-	public UITexture texMsgBoxBg;
-	public UILabel textMsgBox;
+	public RawImage texMsgBoxBg;
+	public Text textMsgBox;
 	public GameObject goLevelSelecter;
 	public GameObject goHelpMsgBox;
-	public UILabel textTimeInfo;
-	public UITexture texHelpMsgBox;
-	public UITexture texHelpMsgBoxBg;
-	public UITexture texTimeIcon;
+	public Text textTimeInfo;
+	public RawImage texHelpMsgBox;
+	public RawImage texHelpMsgBoxBg;
+	public RawImage texTimeIcon;
 
 	void Awake()
 	{
@@ -88,7 +89,7 @@ public class UIManager : MonoBehaviour
 
 		// time icon
 		Vector3 vTimeIcon = textTime.transform.localPosition;
-		vTimeIcon.x = textTime.transform.localPosition.x - (textTime.localSize.x * 0.5f) - (texTimeIcon.localSize.x * 0.5f);
+		vTimeIcon.x = textTime.transform.localPosition.x - (textTime.rectTransform.sizeDelta.x * 0.5f) - (texTimeIcon.rectTransform.sizeDelta.x * 0.5f);
 		vTimeIcon.y = textTime.transform.localPosition.y;
 		texTimeIcon.transform.localPosition = vTimeIcon;
 	}
@@ -120,7 +121,7 @@ public class UIManager : MonoBehaviour
 				texTimeIcon.gameObject.SetActive( true);
 
 			if( eLevelClearType.eLevelClearType_Gold != eClearType)
-				texTimeIcon.mainTexture = Resources.Load( "UI/ui_time_gold") as Texture;
+				texTimeIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
 
 			nMin = nTime_gold / 60;
 			nSec = nTime_gold % 60;
@@ -131,7 +132,7 @@ public class UIManager : MonoBehaviour
 		else if( nGameTime <= nTime_silver)
 		{
 			if( eLevelClearType.eLevelClearType_Silver != eClearType)
-				texTimeIcon.mainTexture = Resources.Load( "UI/ui_time_silver") as Texture;
+				texTimeIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
 
 			nMin = nTime_silver / 60;
 			nSec = nTime_silver % 60;
@@ -142,7 +143,7 @@ public class UIManager : MonoBehaviour
 		else if( nGameTime <= nTime_bronze)
 		{
 			if( eLevelClearType.eLevelClearType_Bronze != eClearType)
-				texTimeIcon.mainTexture = Resources.Load( "UI/ui_time_bronze") as Texture;
+				texTimeIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
 
 			nMin = nTime_bronze / 60;
 			nSec = nTime_bronze % 60;
@@ -254,7 +255,7 @@ public class UIManager : MonoBehaviour
 		if( 1 == nLevel)
 		{
 			textTimeInfo.text = "";
-			texHelpMsgBox.mainTexture = Resources.Load( "UI/help_1") as Texture;
+			texHelpMsgBox.texture = Resources.Load( "UI/help_1") as Texture;
 			
 			goHelpMsgBox.SetActive( true);
 			texHelpMsgBoxBg.gameObject.SetActive( true);
@@ -290,7 +291,7 @@ public class UIManager : MonoBehaviour
 		
 		textTimeInfo.text = strTime_gold + "\n\n" + strTime_silver + "\n\n" + strTime_bronze;
 		
-		texHelpMsgBox.mainTexture = Resources.Load( "UI/help_msgbox") as Texture;
+		texHelpMsgBox.texture = Resources.Load( "UI/help_msgbox") as Texture;
 		goHelpMsgBox.SetActive( true);
 		texHelpMsgBoxBg.gameObject.SetActive( true);
 	}
@@ -360,14 +361,14 @@ public class UIManager : MonoBehaviour
 	{
 		if( 0 == GameMain.Instance.nSoundEnable)
 		{
-			UITexture tex = goBtnSound.GetComponent<UITexture>();
-			tex.mainTexture = Resources.Load( "UI/sound_off") as Texture;
+			RawImage tex = goBtnSound.GetComponent<RawImage>();
+			tex.texture = Resources.Load( "UI/sound_off") as Texture;
 			AudioManager.Instance.StopBgm();
 		}
 		else
 		{
-			UITexture tex = goBtnSound.GetComponent<UITexture>();
-			tex.mainTexture = Resources.Load( "UI/sound_on") as Texture;
+			RawImage tex = goBtnSound.GetComponent<RawImage>();
+			tex.texture = Resources.Load( "UI/sound_on") as Texture;
 			AudioManager.Instance.PlayBgm( "Sound/bgm");
 		}
 	}

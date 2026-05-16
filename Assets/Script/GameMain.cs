@@ -111,7 +111,7 @@ public class GameMain : MonoBehaviour
 			CameraManager.Instance.SetTarget( m_goPlayer);
 		}
 
-		m_goPlayer.GetComponent<Rigidbody>().velocity = Vector3.zero;
+		m_goPlayer.GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
 		m_goPlayer.GetComponent<Rigidbody>().Sleep();
 		m_goPlayer.transform.position = Vector3.zero;
 		CameraManager.Instance.Init();

@@ -43,7 +43,7 @@ public class CameraManager : MonoBehaviour
 		mainCamera.transform.position = vEnd;
 
 		// update orthographic size
-		float fSpeed = m_target.GetComponent<Rigidbody>().velocity.magnitude;
+		float fSpeed = m_target.GetComponent<Rigidbody>().linearVelocity.magnitude;
 		float scl = Mathf.Clamp01( ( fSpeed - m_fMinZoomSpeed) / (m_fMaxZoomSpeed - m_fMinZoomSpeed));
 		float targetZoomFactor = Mathf.Lerp( m_fOrthographicSize_Min, m_fOrthographicSize_Max, scl);
 		float fDelta = ( targetZoomFactor - mainCamera.orthographicSize) > 0.0f ? m_fZoomFactorMax : m_fZoomFactorMin;
