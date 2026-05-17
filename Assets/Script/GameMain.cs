@@ -61,10 +61,9 @@ public class GameMain : MonoBehaviour
 		{
 			if( true == Input.GetMouseButtonUp( 0) || ( Input.touchCount > 0 && TouchPhase.Began == Input.touches[0].phase))
 			{
-				eCurState = eGameState.eGameState_Select;
-				
 				if (UIManager.Instance != null)
 				{
+					eCurState = eGameState.eGameState_Select;
 					UIManager.Instance.textTouchScreen.gameObject.SetActive( false);
 					UIManager.Instance.texLogo.gameObject.SetActive( false);
 					UIManager.Instance.textSelectLevel.gameObject.SetActive( true);
@@ -72,6 +71,11 @@ public class GameMain : MonoBehaviour
 					UIManager.Instance.goBtnSound.SetActive( true);
 
 					UIManager.Instance.CreateLevelSelectUI();
+				}
+				else
+				{
+					// UI가 없을 경우 테스트를 위해 로고 화면에서 바로 최근 레벨로 직행
+					StartLevel(nSaveLevel);
 				}
 				
 				AudioManager.Instance.PlayBgm( "Sound/bgm");

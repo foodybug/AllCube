@@ -310,5 +310,22 @@ public class MapManager : MonoBehaviour
 			if( false == UIManager.Instance.texMsgBoxBg.gameObject.activeInHierarchy)
 				UIManager.Instance.texNextBtnBg.gameObject.SetActive( true);
 		}
+		else
+		{
+			// UI가 없을 경우 테스트를 위해 자동으로 다음 레벨 진행
+			AudioManager.Instance.Play("Sound/clear");
+			yield return new WaitForSeconds(1.0f);
+			
+			if (GameMain.Instance.nCurLevel >= GameMain.Instance.nLevelCount)
+			{
+				GameMain.Instance.GoLevelSelectScene();
+			}
+			else
+			{
+				GameMain.Instance.nSaveLevel = GameMain.Instance.nCurLevel + 1;
+				GameMain.Instance.SaveData();
+				GameMain.Instance.StartNextLevel();
+			}
+		}
 	}
 }
