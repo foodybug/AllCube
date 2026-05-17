@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -42,7 +42,8 @@ public class GameMain : MonoBehaviour
 	{
 		_LoadData();
 		CameraManager.Instance.Init();
-		UIManager.Instance.ApplySoundButton();
+		if (UIManager.Instance != null)
+			UIManager.Instance.ApplySoundButton();
 	}
 	
 	void Update()
@@ -51,7 +52,8 @@ public class GameMain : MonoBehaviour
 		if( true == Input.GetKeyDown( KeyCode.Escape))
 		{
 			AudioManager.Instance.Play( "Sound/ui_button_down");
-			UIManager.Instance.ConformBackBtn();
+			if (UIManager.Instance != null)
+				UIManager.Instance.ConformBackBtn();
 		}
 #endif
 
@@ -60,13 +62,18 @@ public class GameMain : MonoBehaviour
 			if( true == Input.GetMouseButtonUp( 0) || ( Input.touchCount > 0 && TouchPhase.Began == Input.touches[0].phase))
 			{
 				eCurState = eGameState.eGameState_Select;
-				UIManager.Instance.textTouchScreen.gameObject.SetActive( false);
-				UIManager.Instance.texLogo.gameObject.SetActive( false);
-				UIManager.Instance.textSelectLevel.gameObject.SetActive( true);
-				UIManager.Instance.btnBack.gameObject.SetActive( true);
-				UIManager.Instance.goBtnSound.SetActive( true);
+				
+				if (UIManager.Instance != null)
+				{
+					UIManager.Instance.textTouchScreen.gameObject.SetActive( false);
+					UIManager.Instance.texLogo.gameObject.SetActive( false);
+					UIManager.Instance.textSelectLevel.gameObject.SetActive( true);
+					UIManager.Instance.btnBack.gameObject.SetActive( true);
+					UIManager.Instance.goBtnSound.SetActive( true);
 
-				UIManager.Instance.CreateLevelSelectUI();
+					UIManager.Instance.CreateLevelSelectUI();
+				}
+				
 				AudioManager.Instance.PlayBgm( "Sound/bgm");
 				AdmobManager.Instance.Show();
 			}
@@ -90,7 +97,8 @@ public class GameMain : MonoBehaviour
 		if( true == pause)
 			SaveData();
 
-		UIManager.Instance.PauseTime( pause);
+		if (UIManager.Instance != null)
+			UIManager.Instance.PauseTime( pause);
 	}
 
 	public void StartNextLevel()
@@ -119,12 +127,15 @@ public class GameMain : MonoBehaviour
 		MapManager.Instance.LoadCubeMap( nLevel);
 		m_goPlayer.GetComponent<Rigidbody>().WakeUp();
 
-		UIManager.Instance.SetPlayInfo( nLevel, MapManager.Instance.CoinCount);
-		if( false == UIManager.Instance.goBtnRetry.activeInHierarchy)
-			UIManager.Instance.goBtnRetry.SetActive( true);
-		UIManager.Instance.StartTime();
+		if (UIManager.Instance != null)
+		{
+			UIManager.Instance.SetPlayInfo( nLevel, MapManager.Instance.CoinCount);
+			if( false == UIManager.Instance.goBtnRetry.activeInHierarchy)
+				UIManager.Instance.goBtnRetry.SetActive( true);
+			UIManager.Instance.StartTime();
 
-		UIManager.Instance.OpenHelpMsgBox_1( nLevel);
+			UIManager.Instance.OpenHelpMsgBox_1( nLevel);
+		}
 	}
 
 	public void GoLevelSelectScene()
@@ -133,7 +144,8 @@ public class GameMain : MonoBehaviour
 		Util.MyDestroy( m_goPlayer);
 		MapManager.Instance.UnLoadCubeMap();
 
-		UIManager.Instance.CreateLevelSelectUI();
+		if (UIManager.Instance != null)
+			UIManager.Instance.CreateLevelSelectUI();
 	}
 
 	private void _LoadData()

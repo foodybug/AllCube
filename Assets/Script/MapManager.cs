@@ -237,7 +237,8 @@ public class MapManager : MonoBehaviour
 		m_listCoin.Remove( go);
 		Util.MyDestroy( go);
 
-		UIManager.Instance.SetPlayInfo( CoinCount);
+		if (UIManager.Instance != null)
+			UIManager.Instance.SetPlayInfo( CoinCount);
 
 		// level clear
 		if( 0 == CoinCount)
@@ -260,51 +261,54 @@ public class MapManager : MonoBehaviour
 
 		yield return new WaitForSeconds( 0.5f);
 
-		if( UIManager.eLevelClearType.eLevelClearType_None == UIManager.Instance.eClearType)
+		if (UIManager.Instance != null)
 		{
-			AudioManager.Instance.Play( "Sound/fail", 0.3f);
-			UIManager.Instance.textNext.text = "Retry";
-			UIManager.Instance.texNext.texture = Resources.Load( "UI/retry_bg") as Texture;
-			UIManager.Instance.texResultIcon.enabled = false;
-			UIManager.Instance.textResultTime.enabled = false;
-		}
-		else
-		{
-			AudioManager.Instance.Play( "Sound/clear");
-			UIManager.Instance.texNext.texture = Resources.Load( "UI/done_bg") as Texture;
-
-			if( GameMain.Instance.nCurLevel == GameMain.Instance.nLevelCount)
-				UIManager.Instance.textNext.text = "Clear!";
-			else
-				UIManager.Instance.textNext.text = "Done";
-
-			// < result
-			UIManager.Instance.texResultIcon.enabled = true;
-			UIManager.Instance.textResultTime.enabled = true;
-			int nMin = UIManager.Instance.nGameTime / 60;
-			int nSec = UIManager.Instance.nGameTime % 60;
-			UIManager.Instance.textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-			if( UIManager.eLevelClearType.eLevelClearType_Gold == UIManager.Instance.eClearType)
-				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
-			else if( UIManager.eLevelClearType.eLevelClearType_Silver == UIManager.Instance.eClearType)
-				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
-			else
-				UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
-			// result >
-
-			if( 0 == GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1])
-				GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
+			if( UIManager.eLevelClearType.eLevelClearType_None == UIManager.Instance.eClearType)
+			{
+				AudioManager.Instance.Play( "Sound/fail", 0.3f);
+				UIManager.Instance.textNext.text = "Retry";
+				UIManager.Instance.texNext.texture = Resources.Load( "UI/retry_bg") as Texture;
+				UIManager.Instance.texResultIcon.enabled = false;
+				UIManager.Instance.textResultTime.enabled = false;
+			}
 			else
 			{
-				if( GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] > (int)( UIManager.Instance.eClearType))
-					GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
-			}
-			LevelSelecter.Instance.UpdateSelectBtnStateAndSaveData();
-		}
+				AudioManager.Instance.Play( "Sound/clear");
+				UIManager.Instance.texNext.texture = Resources.Load( "UI/done_bg") as Texture;
 
-		UIManager.Instance.btnNext.gameObject.SetActive( true);
-		
-		if( false == UIManager.Instance.texMsgBoxBg.gameObject.activeInHierarchy)
-			UIManager.Instance.texNextBtnBg.gameObject.SetActive( true);
+				if( GameMain.Instance.nCurLevel == GameMain.Instance.nLevelCount)
+					UIManager.Instance.textNext.text = "Clear!";
+				else
+					UIManager.Instance.textNext.text = "Done";
+
+				// < result
+				UIManager.Instance.texResultIcon.enabled = true;
+				UIManager.Instance.textResultTime.enabled = true;
+				int nMin = UIManager.Instance.nGameTime / 60;
+				int nSec = UIManager.Instance.nGameTime % 60;
+				UIManager.Instance.textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
+				if( UIManager.eLevelClearType.eLevelClearType_Gold == UIManager.Instance.eClearType)
+					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
+				else if( UIManager.eLevelClearType.eLevelClearType_Silver == UIManager.Instance.eClearType)
+					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
+				else
+					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
+				// result >
+
+				if( 0 == GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1])
+					GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
+				else
+				{
+					if( GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] > (int)( UIManager.Instance.eClearType))
+						GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
+				}
+				LevelSelecter.Instance.UpdateSelectBtnStateAndSaveData();
+			}
+
+			UIManager.Instance.btnNext.gameObject.SetActive( true);
+			
+			if( false == UIManager.Instance.texMsgBoxBg.gameObject.activeInHierarchy)
+				UIManager.Instance.texNextBtnBg.gameObject.SetActive( true);
+		}
 	}
 }

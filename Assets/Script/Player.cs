@@ -24,7 +24,7 @@ public class Player : MonoBehaviour
 		if( eGameState.eGameState_Play != GameMain.Instance.eCurState)
 			return;
 
-		if( true == UIManager.Instance.bPauseTime)
+		if( UIManager.Instance != null && true == UIManager.Instance.bPauseTime)
 			return;
 
 		forceWait -= Time.deltaTime;
