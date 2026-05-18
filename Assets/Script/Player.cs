@@ -6,7 +6,7 @@ public class Player : MonoBehaviour
 	public Texture texPlayer_On;
 	public Texture texPlayer_Off;
 
-	private float addForceLimit = 0.5f;
+	private float addForceLimit = 0.2f;
 	private float amount = 400.0f;
 	private float torque = 40;
 	private float forceWait = 0;
@@ -37,7 +37,7 @@ public class Player : MonoBehaviour
 		{
 			bool bInput = false;
 			
-			if( Input.GetKeyDown( KeyCode.RightArrow) || Input.GetKeyDown( KeyCode.LeftArrow) || Input.GetKeyDown( KeyCode.Space))
+			if( Input.GetKeyDown( KeyCode.RightArrow) || Input.GetKeyDown( KeyCode.LeftArrow) || Input.GetKeyDown( KeyCode.Space) || Input.GetMouseButtonDown( 0))
 				bInput = true;
 
 			if( Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
@@ -68,7 +68,7 @@ public class Player : MonoBehaviour
 			if( GetComponent<Rigidbody>() != null)
 			{
 				GetComponent<Rigidbody>().AddForce( new Vector3( moveX * amount, amount, 0) * Time.deltaTime, ForceMode.Impulse);
-				GetComponent<Rigidbody>().AddTorque( new Vector3( 0, 0, moveX * torque) * Time.deltaTime, ForceMode.Impulse);
+				GetComponent<Rigidbody>().AddTorque( new Vector3( 0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
 
 				AudioManager.Instance.Play( "Sound/jump", 0.5f);
 			}
