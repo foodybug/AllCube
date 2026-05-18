@@ -68,7 +68,7 @@ public class Player : MonoBehaviour
 			if( GetComponent<Rigidbody>() != null)
 			{
 				GetComponent<Rigidbody>().AddForce( new Vector3( moveX * amount, amount, 0) * Time.deltaTime, ForceMode.Impulse);
-				GetComponent<Rigidbody>().AddTorque( new Vector3( 0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
+				GetComponent<Rigidbody>().AddTorque( new Vector3( 0, 0, moveX * torque) * Time.deltaTime, ForceMode.Impulse);
 
 				AudioManager.Instance.Play( "Sound/jump", 0.5f);
 			}
