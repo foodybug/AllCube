@@ -42,13 +42,20 @@ public class Player : MonoBehaviour
 
 			if( Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
 			{
-				Ray ray = CameraManager.Instance.uiCamera.ScreenPointToRay( Input.GetTouch( 0).position);
-				RaycastHit hit;
-				if( true == Physics.Raycast( ray, out hit) && hit.collider.gameObject.layer == LayerMask.NameToLayer( "MyUI"))
+				if (CameraManager.Instance.uiCamera != null)
 				{
+					Ray ray = CameraManager.Instance.uiCamera.ScreenPointToRay( Input.GetTouch( 0).position);
+					RaycastHit hit;
+					if( true == Physics.Raycast( ray, out hit) && hit.collider.gameObject.layer == LayerMask.NameToLayer( "MyUI"))
+					{
+					}
+					else
+						bInput = true;
 				}
 				else
+				{
 					bInput = true;
+				}
 			}
 
 			if( bInput)
@@ -67,8 +74,13 @@ public class Player : MonoBehaviour
 			
 			if( GetComponent<Rigidbody>() != null)
 			{
-				GetComponent<Rigidbody>().AddForce( new Vector3( moveX * amount, amount, 0) * Time.deltaTime, ForceMode.Impulse);
-				GetComponent<Rigidbody>().AddTorque( new Vector3( 0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
+				Rigidbody rb = GetComponent<Rigidbody>();
+				// 이전 점프의 물리량(속도, 회전)이 남아있어 반대 방향 점프 시 상쇄되는 문제 방지
+				rb.linearVelocity = Vector3.zero;
+				rb.angularVelocity = Vector3.zero;
+				
+				rb.AddForce( new Vector3( moveX * amount, amount, 0) * Time.deltaTime, ForceMode.Impulse);
+				rb.AddTorque( new Vector3( 0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
 
 				AudioManager.Instance.Play( "Sound/jump", 0.5f);
 			}
