@@ -44,6 +44,12 @@ public class GameMain : MonoBehaviour
 		CameraManager.Instance.Init();
 		if (UIManager.Instance != null)
 			UIManager.Instance.ApplySoundButton();
+		else
+		{
+			// UI가 없어서 로고 텍스트/이미지가 안 보이므로, 
+			// 화면이 빈 것처럼 보이지 않게 로고 상태를 건너뛰고 바로 레벨 시작
+			StartLevel(nSaveLevel);
+		}
 	}
 	
 	void Update()
