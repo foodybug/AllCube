@@ -6,7 +6,7 @@ public class Player : MonoBehaviour
 	public Texture texPlayer_On;
 	public Texture texPlayer_Off;
 
-	private float addForceLimit = 0.2f;
+	private float addForceLimit = 0.05f;
 	private float amount = 400.0f;
 	private float torque = 40;
 	private float forceWait = 0;
@@ -14,6 +14,7 @@ public class Player : MonoBehaviour
 	private bool AllowAddForce { get { return forceWait < 0.0f;}}
 	private float moveCubeForce = 5.0f;
 	private float nextJumpDir = 1.0f;
+	private float lastMoveX = 0.0f;
 	
 	void Start()
 	{
@@ -83,6 +84,7 @@ public class Player : MonoBehaviour
 				rb.AddTorque( new Vector3( 0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
 
 				AudioManager.Instance.Play( "Sound/jump", 0.5f);
+				lastMoveX = moveX;
 			}
 			
 			moveX = 0;
@@ -101,6 +103,17 @@ public class Player : MonoBehaviour
 
 	void OnCollisionEnter(Collision collision)
 	{
+		if (collision.contacts.Length > 0 && collision.contacts[0].normal.y < -0.5f)
+		{
+			Rigidbody rb = GetComponent<Rigidbody>();
+			if (rb != null)
+			{
+				Vector3 vel = rb.linearVelocity;
+				vel.x = lastMoveX * amount * Time.fixedDeltaTime / rb.mass;
+				rb.linearVelocity = vel;
+			}
+		}
+
 		// Break
 		CubeBreak cubeBreak = collision.gameObject.GetComponent<CubeBreak>();
 		if( null != cubeBreak)
