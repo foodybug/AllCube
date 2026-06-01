@@ -29,6 +29,11 @@ public class MapManager : MonoBehaviour
 	private float m_fCubeSize = 0.0f;
 	private float m_fLerp = 0.1f;
 
+	private int m_nTotalCoinsCollected = 0;
+	public int TotalCoinsCollected { get { return m_nTotalCoinsCollected; } }
+
+	private int m_highestGeneratedY = 0;
+
 	public int CoinCount { get{ return m_listCoin.Count;}}
 
 	void Awake()
@@ -45,86 +50,76 @@ public class MapManager : MonoBehaviour
 	
 	void Update()
 	{
-	}
+		if (GameMain.Instance == null) return;
 
-	public void LoadCubeMap(int nStage)
-	{
-		string strPath = "Stage/" + nStage.ToString();
-		Texture2D texStage = Resources.Load( strPath) as Texture2D;
-		eMapProp[,] eProp = new eMapProp[ texStage.height, texStage.width];
-
-		for( int y = 0; y < texStage.height; y++)
+		if (GameMain.Instance.eCurState == eGameState.eGameState_Play)
 		{
-			for( int x = 0; x < texStage.width; x++)
+			GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
+			if (playerGo != null)
 			{
-				Color color = texStage.GetPixel( x, y);
-				eMapProp prop = _GetMapProp( color);
-				eProp[ y, x] = prop;
-			}
-		}
+				float playerY = playerGo.transform.position.y / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f);
 
-		for( int y = 0; y < texStage.height; y++)
-		{
-			for( int x = 0; x < texStage.width; x++)
-			{
-				eMapProp prop = eProp[ y, x];
-				if( eMapProp.eMapProp_Coin == prop)
+				// 1. Generate up to playerY + 15 rows ahead
+				int targetY = Mathf.CeilToInt(playerY) + 15;
+				if (targetY > m_highestGeneratedY)
 				{
-					m_listCoin.Add( _CreateCoin( x, y));
+					GenerateRowsUpTo(targetY);
 				}
-				else
+
+				// 2. Clean up old blocks that are far below the player Y - 10
+				CleanupBlocksBelow(Mathf.FloorToInt(playerY) - 10);
+
+				// 3. Fall to death check (6 units below the camera Y position)
+				float cameraY = CameraManager.Instance.mainCamera.transform.position.y;
+				if (playerGo.transform.position.y < cameraY - 6.0f * (m_fCubeSize > 0f ? m_fCubeSize : 1.0f))
 				{
-					if( eMapProp.eMapProp_None != prop)
+					TriggerGameOver();
+				}
+
+				// 4. Dynamic warning / visual feedback on all active coins
+				Player player = playerGo.GetComponent<Player>();
+				if (player != null)
+				{
+					float speedMultiplier = Mathf.Max(1.0f, 15.0f / (player.JumpCount + 1f));
+
+					// Y spin and Z tilt
+					float targetZRotation = player.NextJumpDir > 0 ? -45f : 45f;
+					float spinSpeed = 30f * speedMultiplier;
+					float lerpSpeed = 5f * speedMultiplier;
+
+					// HSV rainbow shift
+					float hue = (Time.time * 0.08f * speedMultiplier) % 1.0f;
+					Color rainbowColor = Color.HSVToRGB(hue, 0.9f, 0.9f);
+
+					foreach (GameObject coin in m_listCoin)
 					{
-						GameObject go = _CreateCube( x, y, prop);
-						int nMoveLeft = 0;
-						int nMoveRight = 0;
-						int nMoveUp = 0;
-						int nMoveDown = 0;
-						if( prop == eMapProp.eMapProp_MoveX)
+						if (coin != null)
 						{
-							for( int i = x-1; i > 0; i--)
-							{
-								if( eMapProp.eMapProp_None != eProp[ y, i])
-									break;
-								nMoveLeft++;
-							}
+							coin.transform.Rotate(0, spinSpeed * Time.deltaTime, 0, Space.World);
 
-							for( int k = x+1; k < texStage.width; k++)
-							{
-								if( eMapProp.eMapProp_None != eProp[ y, k])
-									break;
-								nMoveRight++;
-							}
+							Quaternion targetRot = Quaternion.Euler(0, coin.transform.rotation.eulerAngles.y, targetZRotation);
+							coin.transform.rotation = Quaternion.Lerp(coin.transform.rotation, targetRot, Time.deltaTime * lerpSpeed);
 
-							CubeMoveX moveX = go.GetComponent<CubeMoveX>();
-							moveX.SetMove( (float)nMoveLeft * m_fCubeSize, (float)nMoveRight * m_fCubeSize);
+							Renderer r = coin.GetComponentInChildren<Renderer>();
+							if (r != null)
+							{
+								r.material.color = rainbowColor;
+							}
 						}
-						else if( prop == eMapProp.eMapProp_MoveY)
-						{
-							for( int i = y-1; i > 0; i--)
-							{
-								if( eMapProp.eMapProp_None != eProp[ i, x])
-									break;
-								nMoveDown++;
-							}
-							
-							for( int k = y+1; k < texStage.height; k++)
-							{
-								if( eMapProp.eMapProp_None != eProp[ k, x])
-									break;
-								nMoveUp++;
-							}
-							
-							CubeMoveY moveY = go.GetComponent<CubeMoveY>();
-							moveY.SetMove( (float)nMoveUp * m_fCubeSize, (float)nMoveDown * m_fCubeSize);
-						}
-
-						m_listCube.Add( go);
 					}
 				}
 			}
 		}
+	}
+
+	public void LoadCubeMap(int nStage)
+	{
+		UnLoadCubeMap();
+		m_highestGeneratedY = 0;
+		m_nTotalCoinsCollected = 0;
+
+		// Spawn starting platform and walls
+		GenerateRowsUpTo(15);
 	}
 
 	private eMapProp _GetMapProp(Color color)
@@ -209,6 +204,20 @@ public class MapManager : MonoBehaviour
 		go.transform.position = vPos;
 		go.transform.parent = this.transform;
 
+		MeshFilter mf = go.GetComponentInChildren<MeshFilter>();
+		if (mf != null)
+		{
+			GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			MeshFilter tempMf = tempCube.GetComponent<MeshFilter>();
+			if (tempMf != null)
+			{
+				mf.sharedMesh = tempMf.sharedMesh;
+			}
+			Util.MyDestroy(tempCube);
+		}
+
+		go.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+
 		return go;
 	}
 
@@ -237,12 +246,25 @@ public class MapManager : MonoBehaviour
 		m_listCoin.Remove( go);
 		Util.MyDestroy( go);
 
-		if (UIManager.Instance != null)
-			UIManager.Instance.SetPlayInfo( CoinCount);
+		m_nTotalCoinsCollected++;
 
-		// level clear
-		if( 0 == CoinCount)
-			StartCoroutine( _LevelClear());
+		if (CameraManager.Instance.Target != null)
+		{
+			Player player = CameraManager.Instance.Target.GetComponent<Player>();
+			if (player != null)
+			{
+				player.AddJumps(3);
+			}
+		}
+
+		if (UIManager.Instance != null)
+		{
+			Player player = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.GetComponent<Player>() : null;
+			if (player != null)
+			{
+				UIManager.Instance.SetPlayStats(m_nTotalCoinsCollected, player.JumpCount);
+			}
+		}
 	}
 
 	public void RemoveCube(GameObject go)
@@ -261,54 +283,17 @@ public class MapManager : MonoBehaviour
 
 		yield return new WaitForSeconds( 0.5f);
 
+		// Result 씬으로 넘어가기 전 Play 정보를 정적 필드에 안전하게 백업
+		GameMain.lastTotalCoins = MapManager.Instance.TotalCoinsCollected;
 		if (UIManager.Instance != null)
 		{
-			if( UIManager.eLevelClearType.eLevelClearType_None == UIManager.Instance.eClearType)
-			{
-				AudioManager.Instance.Play( "Sound/fail", 0.3f);
-				UIManager.Instance.textNext.text = "Retry";
-				UIManager.Instance.texNext.texture = Resources.Load( "UI/retry_bg") as Texture;
-				UIManager.Instance.texResultIcon.enabled = false;
-				UIManager.Instance.textResultTime.enabled = false;
-			}
-			else
-			{
-				AudioManager.Instance.Play( "Sound/clear");
-				UIManager.Instance.texNext.texture = Resources.Load( "UI/done_bg") as Texture;
+			GameMain.lastGameTime = UIManager.Instance.nGameTime;
+			GameMain.lastClearType = UIManager.Instance.eClearType;
+		}
 
-				if( GameMain.Instance.nCurLevel == GameMain.Instance.nLevelCount)
-					UIManager.Instance.textNext.text = "Clear!";
-				else
-					UIManager.Instance.textNext.text = "Done";
-
-				// < result
-				UIManager.Instance.texResultIcon.enabled = true;
-				UIManager.Instance.textResultTime.enabled = true;
-				int nMin = UIManager.Instance.nGameTime / 60;
-				int nSec = UIManager.Instance.nGameTime % 60;
-				UIManager.Instance.textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-				if( UIManager.eLevelClearType.eLevelClearType_Gold == UIManager.Instance.eClearType)
-					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
-				else if( UIManager.eLevelClearType.eLevelClearType_Silver == UIManager.Instance.eClearType)
-					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
-				else
-					UIManager.Instance.texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
-				// result >
-
-				if( 0 == GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1])
-					GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
-				else
-				{
-					if( GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] > (int)( UIManager.Instance.eClearType))
-						GameMain.Instance.nClearType[ GameMain.Instance.nCurLevel - 1] = (int)( UIManager.Instance.eClearType);
-				}
-				LevelSelecter.Instance.UpdateSelectBtnStateAndSaveData();
-			}
-
-			UIManager.Instance.btnNext.gameObject.SetActive( true);
-			
-			if( false == UIManager.Instance.texMsgBoxBg.gameObject.activeInHierarchy)
-				UIManager.Instance.texNextBtnBg.gameObject.SetActive( true);
+		if (MainManager.Instance != null)
+		{
+			MainManager.Instance.TransitionToScene("Result");
 		}
 		else
 		{
@@ -325,6 +310,116 @@ public class MapManager : MonoBehaviour
 				GameMain.Instance.nSaveLevel = GameMain.Instance.nCurLevel + 1;
 				GameMain.Instance.SaveData();
 				GameMain.Instance.StartNextLevel();
+			}
+		}
+	}
+
+	public void TriggerGameOver()
+	{
+		if (GameMain.Instance.eCurState == eGameState.eGameState_Play)
+		{
+			StartCoroutine(_LevelClear());
+		}
+	}
+
+	private void GenerateRowsUpTo(int targetY)
+	{
+		if (m_fCubeSize <= 0f)
+		{
+			m_fCubeSize = 1.0f;
+		}
+
+		for (int y = m_highestGeneratedY; y <= targetY; y++)
+		{
+			m_listCube.Add(_CreateCube(-4, y, eMapProp.eMapProp_Normal));
+			m_listCube.Add(_CreateCube(4, y, eMapProp.eMapProp_Normal));
+
+			if (y == 0 || y == 1)
+			{
+				for (int x = -3; x <= 3; x++)
+				{
+					m_listCube.Add(_CreateCube(x, y, eMapProp.eMapProp_Normal));
+				}
+			}
+			else if (y >= 3)
+			{
+				if (y % 3 == 0)
+				{
+					bool isLeft = (y / 3) % 2 == 1;
+					
+					eMapProp platformType = eMapProp.eMapProp_Normal;
+					float rand = Random.value;
+					if (rand < 0.20f)
+					{
+						platformType = eMapProp.eMapProp_Break;
+					}
+					else if (rand < 0.30f)
+					{
+						platformType = eMapProp.eMapProp_MoveX;
+					}
+
+					if (isLeft)
+					{
+						m_listCube.Add(_CreateCube(-2, y, platformType));
+						m_listCube.Add(_CreateCube(-1, y, platformType));
+						m_listCoin.Add(_CreateCoin(-2, y + 1));
+					}
+					else
+					{
+						m_listCube.Add(_CreateCube(1, y, platformType));
+						m_listCube.Add(_CreateCube(2, y, platformType));
+						m_listCoin.Add(_CreateCoin(2, y + 1));
+					}
+
+					if (platformType == eMapProp.eMapProp_MoveX)
+					{
+						CubeMoveX moveX = m_listCube[m_listCube.Count - 1].GetComponent<CubeMoveX>();
+						if (moveX != null)
+						{
+							moveX.SetMove(1.5f * m_fCubeSize, 1.5f * m_fCubeSize);
+						}
+					}
+				}
+			}
+		}
+		m_highestGeneratedY = targetY + 1;
+	}
+
+	private void CleanupBlocksBelow(int limitY)
+	{
+		for (int i = m_listCube.Count - 1; i >= 0; i--)
+		{
+			GameObject go = m_listCube[i];
+			if (go != null)
+			{
+				int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
+				if (gridY < limitY)
+				{
+					m_listCube.RemoveAt(i);
+					Util.MyDestroy(go);
+				}
+			}
+			else
+			{
+				m_listCube.RemoveAt(i);
+			}
+		}
+
+		for (int i = m_listCoin.Count - 1; i >= 0; i--)
+		{
+			GameObject go = m_listCoin[i];
+			if (go != null)
+			{
+				int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
+				if (gridY < limitY)
+				{
+					m_listCoin.RemoveAt(i);
+					Util.MyDestroy(go);
+				}
+			}
+			else
+			{
+				m_listCoin.RemoveAt(i);
 			}
 		}
 	}

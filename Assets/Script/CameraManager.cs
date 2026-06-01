@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class CameraManager : MonoBehaviour
@@ -10,6 +10,7 @@ public class CameraManager : MonoBehaviour
 	public Camera uiCamera;
 
 	private Transform m_target;
+	public Transform Target { get { return m_target; } }
 	private float m_fFollowSpeed = 1.0f;
 	private float m_fMinZoomSpeed = 15.0f;
 	private float m_fMaxZoomSpeed = 40.0f;

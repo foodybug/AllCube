@@ -27,6 +27,7 @@ public class UIManager : MonoBehaviour
 	public int nGameTime = 0;
 	public eLevelClearType eClearType = eLevelClearType.eLevelClearType_None;
 
+
 	public Camera uiCamera;
 	public RawImage texLogo;
 	public Text textPlayInfo;
@@ -100,6 +101,15 @@ public class UIManager : MonoBehaviour
 		{
 			if( true == goHelpMsgBox.activeInHierarchy)
 				return;
+
+			if (MapManager.Instance != null && CameraManager.Instance.Target != null)
+			{
+				Player player = CameraManager.Instance.Target.GetComponent<Player>();
+				if (player != null)
+				{
+					SetPlayStats(MapManager.Instance.TotalCoinsCollected, player.JumpCount);
+				}
+			}
 		}
 		else
 			return;
@@ -165,21 +175,32 @@ public class UIManager : MonoBehaviour
 		textTime.text = strTimeRes + strTime;
 	}
 
-	public void SetPlayInfo(int nLevel, int nCoin)
+	public void SetPlayInfo(int nLevel, int nCoin, int nJumps)
 	{
 		if( false == textPlayInfo.gameObject.activeInHierarchy)
 			textPlayInfo.gameObject.SetActive( true);
 
 		m_nLevelBuff = nLevel;
 
-		SetPlayInfo( nCoin);
+		SetPlayStats( nCoin, nJumps);
+	}
+
+	public void SetPlayInfo(int nLevel, int nCoin)
+	{
+		SetPlayInfo(nLevel, nCoin, 10);
 	}
 
 	public void SetPlayInfo(int nCoin)
 	{
+		SetPlayInfo(nCoin, 10);
+	}
+
+	public void SetPlayStats(int nCoin, int nJumps)
+	{
 		string strLevel = "Level " + m_nLevelBuff.ToString ();
 		string strJewel = string.Format( "Jewel {0:n0}", nCoin);
-		textPlayInfo.text = strLevel + "\n" + strJewel;
+		string strJumps = string.Format( "Jumps {0:n0}", nJumps);
+		textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strJumps;
 	}
 
 	public void StartTime()
@@ -376,16 +397,17 @@ public class UIManager : MonoBehaviour
 #region button message
 	public void onBtnNext()
 	{
+		if (MainManager.Instance != null && MainManager.Instance.IsTransitioning) return;
 		AudioManager.Instance.Play( "Sound/ui_button_down");
 
 		btnNext.gameObject.SetActive( false);
 		texNextBtnBg.gameObject.SetActive( false);
 
-		if( eLevelClearType.eLevelClearType_None == eClearType)
-			GameMain.Instance.StartLevel( m_nLevelBuff);
+		if( eLevelClearType.eLevelClearType_None == GameMain.lastClearType)
+			GameMain.Instance.StartLevel( GameMain.nCurLevelStatic);
 		else
 		{
-			if( GameMain.Instance.nCurLevel == GameMain.Instance.nLevelCount)
+			if( GameMain.nCurLevelStatic == GameMain.Instance.nLevelCount)
 			{
 				m_eOldState = eGameState.eGameState_Select;
 				textPlayInfo.gameObject.SetActive( false);
@@ -395,7 +417,10 @@ public class UIManager : MonoBehaviour
 				GameMain.Instance.GoLevelSelectScene();
 			}
 			else
-				GameMain.Instance.StartNextLevel();
+			{
+				GameMain.nCurLevelStatic++;
+				GameMain.Instance.StartLevel( GameMain.nCurLevelStatic );
+			}
 		}
 	}
 
@@ -423,8 +448,9 @@ public class UIManager : MonoBehaviour
 
 	public void onBtnRetry()
 	{
+		if (MainManager.Instance != null && MainManager.Instance.IsTransitioning) return;
 		AudioManager.Instance.Play( "Sound/ui_button_down");
-		GameMain.Instance.StartLevel( m_nLevelBuff);
+		GameMain.Instance.StartLevel( GameMain.nCurLevelStatic );
 	}
 
 	public void onBtnNo()
@@ -437,6 +463,7 @@ public class UIManager : MonoBehaviour
 
 	public void onBtnYes()
 	{
+		if (MainManager.Instance != null && MainManager.Instance.IsTransitioning) return;
 		AudioManager.Instance.Play( "Sound/ui_button_down");
 
 		CloseMsgBox();
@@ -466,5 +493,62 @@ public class UIManager : MonoBehaviour
 		AudioManager.Instance.Play( "Sound/ui_button_down");
 		CloseHelpMsgBox();
 	}
+
+
+
+
+
+	public void SetupResultScreen()
+	{
+		btnNext.gameObject.SetActive( true);
+		if( false == texMsgBoxBg.gameObject.activeInHierarchy)
+			texNextBtnBg.gameObject.SetActive( true);
+
+		if( eLevelClearType.eLevelClearType_None == GameMain.lastClearType)
+		{
+			AudioManager.Instance.Play( "Sound/fail", 0.3f);
+			textNext.text = "Retry";
+			texNext.texture = Resources.Load( "UI/retry_bg") as Texture;
+			
+			texResultIcon.enabled = true;
+			texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
+			textResultTime.enabled = true;
+			int nMin = GameMain.lastGameTime / 60;
+			int nSec = GameMain.lastGameTime % 60;
+			textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
+		}
+		else
+		{
+			AudioManager.Instance.Play( "Sound/clear");
+			texNext.texture = Resources.Load( "UI/done_bg") as Texture;
+
+			if( GameMain.nCurLevelStatic == GameMain.Instance.nLevelCount)
+				textNext.text = "Clear!";
+			else
+				textNext.text = "Done";
+
+			texResultIcon.enabled = true;
+			textResultTime.enabled = true;
+			int nMin = GameMain.lastGameTime / 60;
+			int nSec = GameMain.lastGameTime % 60;
+			textResultTime.text = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
+			if( eLevelClearType.eLevelClearType_Gold == GameMain.lastClearType)
+				texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
+			else if( eLevelClearType.eLevelClearType_Silver == GameMain.lastClearType)
+				texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
+			else
+				texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
+
+			if( 0 == GameMain.Instance.nClearType[ GameMain.nCurLevelStatic - 1])
+				GameMain.Instance.nClearType[ GameMain.nCurLevelStatic - 1] = (int)( GameMain.lastClearType);
+			else
+			{
+				if( GameMain.Instance.nClearType[ GameMain.nCurLevelStatic - 1] > (int)( GameMain.lastClearType))
+					GameMain.Instance.nClearType[ GameMain.nCurLevelStatic - 1] = (int)( GameMain.lastClearType);
+			}
+			LevelSelecter.Instance.UpdateSelectBtnStateAndSaveData();
+		}
+	}
+
 #endregion button message
 }

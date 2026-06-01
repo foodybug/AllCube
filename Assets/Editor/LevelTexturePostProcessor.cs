@@ -8,7 +8,7 @@ public class LevelTexturePostProcessor : AssetPostprocessor
 		if( assetPath.Contains("Stage/"))
 		{
 			TextureImporter ti = (TextureImporter)assetImporter;
-			ti.textureType = TextureImporterType.Advanced;
+			ti.textureType = TextureImporterType.Default;
 			ti.isReadable = true;
 			ti.mipmapEnabled = false;
 			ti.wrapMode = TextureWrapMode.Clamp;
