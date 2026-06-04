@@ -20,14 +20,14 @@ public class LevelSelect : MonoBehaviour
 	{
 		AudioManager.Instance.Play( "Sound/ui_button_down");
 
-		if (UIManager.Instance != null)
+		if (UI_Play.Instance != null)
 		{
-			UIManager.Instance.goLevelSelecter.SetActive( false);
-			UIManager.Instance.textSelectLevel.gameObject.SetActive( false);
+			UI_Play.Instance.goLevelSelecter.SetActive( false);
+			UI_Play.Instance.textSelectLevel.gameObject.SetActive( false);
 		}
 		
-		GameMain.Instance.nCurLevel = nLevel;
-		GameMain.Instance.StartLevel( nLevel);
+		MainManager.Instance.nCurLevel = nLevel;
+		MainManager.Instance.StartLevel( nLevel);
 	}
 
 	public void SetState(int nLv, LevelSelecter.eLevelSelectBtnState eState)
@@ -72,11 +72,11 @@ public class LevelSelect : MonoBehaviour
 
 	private Texture _GetLevelClearTexture(int nLv)
 	{
-		if( (int)( UIManager.eLevelClearType.eLevelClearType_Gold) == GameMain.Instance.nClearType[ nLv - 1])
+		if( (int)( UI_Play.eLevelClearType.eLevelClearType_Gold) == MainManager.Instance.nClearType[ nLv - 1])
 			return Resources.Load( "UI/ui_gold") as Texture;
-		else if( (int)( UIManager.eLevelClearType.eLevelClearType_Silver) == GameMain.Instance.nClearType[ nLv - 1])
+		else if( (int)( UI_Play.eLevelClearType.eLevelClearType_Silver) == MainManager.Instance.nClearType[ nLv - 1])
 			return Resources.Load( "UI/ui_silver") as Texture;
-		else if( (int)( UIManager.eLevelClearType.eLevelClearType_Bronze) == GameMain.Instance.nClearType[ nLv - 1])
+		else if( (int)( UI_Play.eLevelClearType.eLevelClearType_Bronze) == MainManager.Instance.nClearType[ nLv - 1])
 			return Resources.Load( "UI/ui_bronze") as Texture;
 		else
 			return Resources.Load( "UI/ui_bronze") as Texture;

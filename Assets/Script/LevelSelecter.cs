@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -61,13 +61,13 @@ public class LevelSelecter : MonoBehaviour
 		go.transform.localScale = Vector3.one;
 		
 		LevelSelect lvSelect = go.GetComponent<LevelSelect>();
-		if( GameMain.Instance.nSaveLevel < nLevel)
+		if( MainManager.Instance.nSaveLevel < nLevel)
 			lvSelect.SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Lock);
-		else if( GameMain.Instance.nSaveLevel > nLevel)
+		else if( MainManager.Instance.nSaveLevel > nLevel)
 			lvSelect.SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
 		else
 		{
-			if( GameMain.Instance.nLevelCount == nLevel && GameMain.Instance.nClearType[ nLevel - 1] != 0)
+			if( MainManager.Instance.nLevelCount == nLevel && MainManager.Instance.nClearType[ nLevel - 1] != 0)
 				lvSelect.SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
 			else
 				lvSelect.SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Cur);
@@ -78,24 +78,24 @@ public class LevelSelecter : MonoBehaviour
 
 	public void UpdateSelectBtnStateAndSaveData()
 	{
-		if( GameMain.Instance.nSaveLevel == GameMain.Instance.nCurLevel && GameMain.Instance.nLevelCount > GameMain.Instance.nCurLevel)
+		if( MainManager.Instance.nSaveLevel == MainManager.Instance.nCurLevel && MainManager.Instance.nLevelCount > MainManager.Instance.nCurLevel)
 		{
-			int nLevel = GameMain.Instance.nCurLevel + 1;
+			int nLevel = MainManager.Instance.nCurLevel + 1;
 
-			if( nLevel > GameMain.Instance.nLevelCount)
+			if( nLevel > MainManager.Instance.nLevelCount)
 				return;
 
 			m_dicLevelSelect[nLevel-1].SetState( nLevel-1, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
 
-			if( nLevel == GameMain.Instance.nLevelCount)
+			if( nLevel == MainManager.Instance.nLevelCount)
 				m_dicLevelSelect[nLevel].SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
 			else
 				m_dicLevelSelect[nLevel].SetState( nLevel, eLevelSelectBtnState.eLevelSelectBtnState_Cur);
 
-			GameMain.Instance.nSaveLevel = nLevel;
-			GameMain.Instance.SaveData();
+			MainManager.Instance.nSaveLevel = nLevel;
+			MainManager.Instance.SaveData();
 		}
 		else
-			m_dicLevelSelect[GameMain.Instance.nCurLevel].SetState( GameMain.Instance.nCurLevel, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
+			m_dicLevelSelect[MainManager.Instance.nCurLevel].SetState( MainManager.Instance.nCurLevel, eLevelSelectBtnState.eLevelSelectBtnState_Clear);
 	}
 }

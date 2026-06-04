@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameMain : MonoBehaviour
+public class PlayMain : MonoBehaviour
 {
-    static GameMain m_instance;
-    public static GameMain Instance { get { return m_instance; } }
+    private static PlayMain m_instance;
+    public static PlayMain Instance { get { return m_instance; } }
 
     [Header("Local Stage Settings")]
     public GameObject goPlayerSrc;
@@ -21,15 +21,11 @@ public class GameMain : MonoBehaviour
     void Start()
     {
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        Debug.Log("[GameMain Debug] Start method active. Scene Name: " + sceneName);
+        Debug.Log("[PlayMain Debug] Start method active. Scene Name: " + sceneName);
 
         if (sceneName == "Play")
         {
             SetupPlayStage(MainManager.nCurLevelStatic);
-        }
-        else if (sceneName == "Title")
-        {
-            CleanUpStage();
         }
     }
 
@@ -62,9 +58,14 @@ public class GameMain : MonoBehaviour
             UI_Play.Instance.PauseTime(pause);
     }
 
+    private bool m_isGameStarted = false;
+    public bool IsGameStarted { get { return m_isGameStarted; } }
+
     public void SetupPlayStage(int nLevel)
     {
-        Debug.Log("[GameMain Debug] SetupPlayStage called. Level: " + nLevel);
+        Debug.Log("[PlayMain Debug] SetupPlayStage called. Level: " + nLevel);
+        m_isGameStarted = false;
+
         if (MainManager.Instance != null)
         {
             MainManager.Instance.eCurState = eGameState.eGameState_Play;
@@ -82,6 +83,7 @@ public class GameMain : MonoBehaviour
         {
             playerRb.linearVelocity = Vector3.zero;
             playerRb.angularVelocity = Vector3.zero;
+            playerRb.isKinematic = true; // 대기 상태 동안 물리 중력 작동 멈춤
             playerRb.Sleep();
         }
         m_goPlayer.transform.position = Vector3.zero;
@@ -89,10 +91,6 @@ public class GameMain : MonoBehaviour
         CameraManager.Instance.Init();
         MapManager.Instance.UnLoadCubeMap();
         MapManager.Instance.LoadCubeMap(nLevel);
-        if (playerRb != null)
-        {
-            playerRb.WakeUp();
-        }
 
         if (UI_Play.Instance != null)
         {
@@ -100,8 +98,31 @@ public class GameMain : MonoBehaviour
             if (false == UI_Play.Instance.goBtnRetry.activeInHierarchy)
                 UI_Play.Instance.goBtnRetry.SetActive(true);
             UI_Play.Instance.StartTime();
+            UI_Play.Instance.PauseTime(true); // 대기 상태 동안 시간 흐름 일시정지
 
             UI_Play.Instance.OpenHelpMsgBox_1(nLevel);
+        }
+    }
+
+    public void StartGame()
+    {
+        if (m_isGameStarted) return;
+        m_isGameStarted = true;
+        Debug.Log("[PlayMain Debug] Game officially started by player jump input.");
+
+        if (m_goPlayer != null)
+        {
+            Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();
+            if (playerRb != null)
+            {
+                playerRb.isKinematic = false;
+                playerRb.WakeUp();
+            }
+        }
+
+        if (UI_Play.Instance != null)
+        {
+            UI_Play.Instance.PauseTime(false); // 게임 기동 시 타이머 재개
         }
     }
 

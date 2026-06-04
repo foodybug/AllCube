@@ -50,9 +50,9 @@ public class MapManager : MonoBehaviour
 	
 	void Update()
 	{
-		if (GameMain.Instance == null) return;
+		if (MainManager.Instance == null) return;
 
-		if (GameMain.Instance.eCurState == eGameState.eGameState_Play)
+		if (MainManager.Instance.eCurState == eGameState.eGameState_Play)
 		{
 			GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
 			if (playerGo != null)
@@ -76,8 +76,18 @@ public class MapManager : MonoBehaviour
 					TriggerGameOver();
 				}
 
-				// 4. Dynamic warning / visual feedback on all active coins
+				// 3-1. Jump Count Game Over Check (Allows final jump ascent for coin collection grace period)
 				Player player = playerGo.GetComponent<Player>();
+				if (player != null && player.JumpCount <= 0)
+				{
+					Rigidbody rb = playerGo.GetComponent<Rigidbody>();
+					if (rb == null || rb.linearVelocity.y <= 0.01f)
+					{
+						TriggerGameOver();
+					}
+				}
+
+				// 4. Dynamic warning / visual feedback on all active coins
 				if (player != null)
 				{
 					float speedMultiplier = Mathf.Max(1.0f, 15.0f / (player.JumpCount + 1f));
@@ -179,6 +189,10 @@ public class MapManager : MonoBehaviour
 
 		case eMapProp.eMapProp_MoveX:
 			go.GetComponent<Renderer>().material.mainTexture = texCube[5];
+			Rigidbody rbX = go.GetComponent<Rigidbody>();
+			if (rbX == null) rbX = go.AddComponent<Rigidbody>();
+			rbX.isKinematic = true;
+			rbX.useGravity = false;
 			go.AddComponent<CubeMoveX>();
 			CubeMoveX cubeMoveX = go.GetComponent<CubeMoveX>();
 			cubeMoveX.Init( go);
@@ -186,6 +200,10 @@ public class MapManager : MonoBehaviour
 
 		case eMapProp.eMapProp_MoveY:
 			go.GetComponent<Renderer>().material.mainTexture = texCube[5];
+			Rigidbody rbY = go.GetComponent<Rigidbody>();
+			if (rbY == null) rbY = go.AddComponent<Rigidbody>();
+			rbY.isKinematic = true;
+			rbY.useGravity = false;
 			go.AddComponent<CubeMoveY>();
 			CubeMoveY cubeMoveY = go.GetComponent<CubeMoveY>();
 			cubeMoveY.Init( go);
@@ -257,12 +275,12 @@ public class MapManager : MonoBehaviour
 			}
 		}
 
-		if (UIManager.Instance != null)
+		if (UI_Play.Instance != null)
 		{
 			Player player = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.GetComponent<Player>() : null;
 			if (player != null)
 			{
-				UIManager.Instance.SetPlayStats(m_nTotalCoinsCollected, player.JumpCount);
+				UI_Play.Instance.SetPlayStats(m_nTotalCoinsCollected, player.JumpCount);
 			}
 		}
 	}
@@ -279,16 +297,19 @@ public class MapManager : MonoBehaviour
 
 	private IEnumerator _LevelClear()
 	{
-		GameMain.Instance.eCurState = eGameState.eGameState_Result;
+		if (MainManager.Instance != null)
+		{
+			MainManager.Instance.eCurState = eGameState.eGameState_Result;
+		}
 
 		yield return new WaitForSeconds( 0.5f);
 
 		// Result 씬으로 넘어가기 전 Play 정보를 정적 필드에 안전하게 백업
-		GameMain.lastTotalCoins = MapManager.Instance.TotalCoinsCollected;
-		if (UIManager.Instance != null)
+		MainManager.lastTotalCoins = MapManager.Instance.TotalCoinsCollected;
+		if (UI_Play.Instance != null)
 		{
-			GameMain.lastGameTime = UIManager.Instance.nGameTime;
-			GameMain.lastClearType = UIManager.Instance.eClearType;
+			MainManager.lastGameTime = UI_Play.Instance.nGameTime;
+			MainManager.lastClearType = UI_Play.Instance.eClearType;
 		}
 
 		if (MainManager.Instance != null)
@@ -301,22 +322,13 @@ public class MapManager : MonoBehaviour
 			AudioManager.Instance.Play("Sound/clear");
 			yield return new WaitForSeconds(1.0f);
 			
-			if (GameMain.Instance.nCurLevel >= GameMain.Instance.nLevelCount)
-			{
-				GameMain.Instance.GoLevelSelectScene();
-			}
-			else
-			{
-				GameMain.Instance.nSaveLevel = GameMain.Instance.nCurLevel + 1;
-				GameMain.Instance.SaveData();
-				GameMain.Instance.StartNextLevel();
-			}
+			// MainManager가 존재하지 않는 특수한 경우엔 동작하지 않음
 		}
 	}
 
 	public void TriggerGameOver()
 	{
-		if (GameMain.Instance.eCurState == eGameState.eGameState_Play)
+		if (MainManager.Instance != null && MainManager.Instance.eCurState == eGameState.eGameState_Play)
 		{
 			StartCoroutine(_LevelClear());
 		}
@@ -334,14 +346,8 @@ public class MapManager : MonoBehaviour
 			m_listCube.Add(_CreateCube(-4, y, eMapProp.eMapProp_Normal));
 			m_listCube.Add(_CreateCube(4, y, eMapProp.eMapProp_Normal));
 
-			if (y == 0 || y == 1)
-			{
-				for (int x = -3; x <= 3; x++)
-				{
-					m_listCube.Add(_CreateCube(x, y, eMapProp.eMapProp_Normal));
-				}
-			}
-			else if (y >= 3)
+			// Remove early bottom floor blocks to prevent player overlap at start
+			if (y >= 3)
 			{
 				if (y % 3 == 0)
 				{

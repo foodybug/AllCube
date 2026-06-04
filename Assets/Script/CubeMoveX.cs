@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class CubeMoveX : MonoBehaviour
@@ -11,21 +11,32 @@ public class CubeMoveX : MonoBehaviour
 	private float m_fMoveRight = 0.0f;
 	public Vector3 CurPos { get{ return m_vCurPos;}}
 
+	private Rigidbody m_rb;
+
 	void Start()
 	{
 	}
 	
-	void Update()
+	void FixedUpdate()
 	{
 		if( 0.0f == m_fMoveLeft && 0.0f == m_fMoveRight)
 			return;
 
-		if( eGameState.eGameState_Pause == GameMain.Instance.eCurState || true == UIManager.Instance.goHelpMsgBox.activeInHierarchy)
+		if (MainManager.Instance == null)
+			return;
+
+		bool isHelpActive = false;
+		if (UI_Play.Instance != null && UI_Play.Instance.goHelpMsgBox != null)
+		{
+			isHelpActive = UI_Play.Instance.goHelpMsgBox.activeInHierarchy;
+		}
+
+		if (eGameState.eGameState_Pause == MainManager.Instance.eCurState || isHelpActive)
 			return;
 
 		if( true == m_bIncrease)
 		{
-			m_vCurPos.x += ( 3.0f * Time.deltaTime);
+			m_vCurPos.x += ( 3.0f * Time.fixedDeltaTime);
 
 			if( m_vCurPos.x >= m_vOrgPos.x + m_fMoveRight)
 			{
@@ -35,7 +46,7 @@ public class CubeMoveX : MonoBehaviour
 		}
 		else
 		{
-			m_vCurPos.x -= ( 3.0f * Time.deltaTime);
+			m_vCurPos.x -= ( 3.0f * Time.fixedDeltaTime);
 			
 			if( m_vCurPos.x <= m_vOrgPos.x - m_fMoveLeft)
 			{
@@ -44,12 +55,20 @@ public class CubeMoveX : MonoBehaviour
 			}
 		}
 
-		m_goCube.transform.position = m_vCurPos;
+		if (m_rb != null)
+		{
+			m_rb.MovePosition(m_vCurPos);
+		}
+		else
+		{
+			m_goCube.transform.position = m_vCurPos;
+		}
 	}
 
 	public void Init(GameObject go)
 	{
 		m_goCube = go;
+		m_rb = m_goCube.GetComponent<Rigidbody>();
 		m_vOrgPos = m_vCurPos = m_goCube.transform.position;
 	}
 

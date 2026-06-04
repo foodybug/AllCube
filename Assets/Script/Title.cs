@@ -12,29 +12,29 @@ public class Title : MonoBehaviour
 	void Start()
 	{
 		Debug.Log("[Title Debug] Start active. Title script is successfully attached and running.");
-		// Start 시점에 GameMain.Instance가 null일 수 있으므로 Lazy Initialization 진행
+		// Start 시점에 MainManager.Instance가 null일 수 있으므로 Lazy Initialization 진행
 	}
 
 	private void Initialize()
 	{
-		// 씬 내에 로드되어 있으나 비활성화된 GameMain 복구 시도
-		if (GameMain.Instance == null)
+		// 씬 내에 로드되어 있으나 비활성화된 MainManager 복구 시도
+		if (MainManager.Instance == null)
 		{
-			GameMain[] inactiveMain = Resources.FindObjectsOfTypeAll<GameMain>();
+			MainManager[] inactiveMain = Resources.FindObjectsOfTypeAll<MainManager>();
 			if (inactiveMain != null && inactiveMain.Length > 0)
 			{
 				if (inactiveMain[0].gameObject.scene.isLoaded)
 				{
-					Debug.Log("[Title Debug] Found inactive GameMain in scene. Forcing Active!");
+					Debug.Log("[Title Debug] Found inactive MainManager in scene. Forcing Active!");
 					inactiveMain[0].gameObject.SetActive(true);
 				}
 			}
 		}
 
-		if (GameMain.Instance == null) return;
+		if (MainManager.Instance == null) return;
 
-		Debug.Log("[Title Debug] Initialize active. GameMain.Instance is now valid.");
-		GameMain.Instance.eCurState = eGameState.eGameState_Logo;
+		Debug.Log("[Title Debug] Initialize active. MainManager.Instance is now valid.");
+		MainManager.Instance.eCurState = eGameState.eGameState_Logo;
 		CameraManager.Instance.Init();
 		
 		// Title UI 초기 세팅
@@ -47,7 +47,7 @@ public class Title : MonoBehaviour
 			UnityEngine.UI.RawImage soundImg = goBtnSound.GetComponent<UnityEngine.UI.RawImage>();
 			if (soundImg != null)
 			{
-				if (0 == GameMain.Instance.nSoundEnable)
+				if (0 == MainManager.Instance.nSoundEnable)
 				{
 					soundImg.texture = Resources.Load("UI/sound_off") as Texture;
 					AudioManager.Instance.StopBgm();
@@ -61,17 +61,17 @@ public class Title : MonoBehaviour
 		}
 
 		// 로비 복귀 플래그가 참인 경우 즉시 UI 구성 전환 (Title 자체 UI 제어)
-		if (GameMain.StartInLevelSelect)
+		if (MainManager.StartInLevelSelect)
 		{
-			GameMain.StartInLevelSelect = false;
-			GameMain.Instance.eCurState = eGameState.eGameState_Select;
+			MainManager.StartInLevelSelect = false;
+			MainManager.Instance.eCurState = eGameState.eGameState_Select;
 			
 			if (textTouchScreen != null) textTouchScreen.gameObject.SetActive(false);
 			if (texLogo != null) texLogo.gameObject.SetActive(false);
 			if (goBtnSound != null) goBtnSound.SetActive(true);
 
-			// 레벨 선택창 UI는 GameMain을 통해 생성 지시
-			GameMain.Instance.GoLevelSelectScene();
+			// 레벨 선택창 UI는 MainManager를 통해 생성 지시
+			MainManager.Instance.GoLevelSelectScene();
 		}
 
 		m_bInitialized = true;
@@ -82,9 +82,9 @@ public class Title : MonoBehaviour
 		if (!m_bInitialized)
 		{
 			// 매 프레임 대기 도중 씬 내부의 비활성화 매니저가 깨어났는지/깨울 수 있는지 상시 추적
-			if (GameMain.Instance == null)
+			if (MainManager.Instance == null)
 			{
-				GameMain[] inactiveMain = Resources.FindObjectsOfTypeAll<GameMain>();
+				MainManager[] inactiveMain = Resources.FindObjectsOfTypeAll<MainManager>();
 				if (inactiveMain != null && inactiveMain.Length > 0)
 				{
 					if (inactiveMain[0].gameObject.scene.isLoaded)
@@ -94,17 +94,17 @@ public class Title : MonoBehaviour
 				}
 			}
 
-			if (GameMain.Instance != null)
+			if (MainManager.Instance != null)
 			{
 				Initialize();
 			}
 			return;
 		}
 
-		if (GameMain.Instance == null) return;
+		if (MainManager.Instance == null) return;
 
 		// 로고 화면에서 터치 입력 감지 시 곧바로 Play 씬으로 전환 처리
-		if (eGameState.eGameState_Logo == GameMain.Instance.eCurState)
+		if (eGameState.eGameState_Logo == MainManager.Instance.eCurState)
 		{
 			if (MainManager.Instance != null && MainManager.Instance.IsTransitioning)
 			{
@@ -115,12 +115,12 @@ public class Title : MonoBehaviour
 
 			if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began))
 			{
-				Debug.Log("[Title Debug] Screen Click/Touch detected. Calling StartLevel on GameMain.");
+				Debug.Log("[Title Debug] Screen Click/Touch detected. Calling StartLevel on MainManager.");
 				AudioManager.Instance.PlayBgm("Sound/bgm");
 				AdmobManager.Instance.Show();
 
 				// 중간 로비 UI 구성 단계 없이 즉시 플레이 씬으로 시작되도록 StartLevel 호출
-				GameMain.Instance.StartLevel(GameMain.Instance.nSaveLevel);
+				MainManager.Instance.StartLevel(MainManager.Instance.nSaveLevel);
 			}
 		}
 	}

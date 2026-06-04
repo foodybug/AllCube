@@ -34,7 +34,7 @@ public class AudioManager : MonoBehaviour
 
 	public void PlayBgm(string strPath)
 	{
-		if( 0 == GameMain.Instance.nSoundEnable)
+		if( 0 == MainManager.Instance.nSoundEnable)
 			return;
 
 		if( null == m_goBgm)
@@ -60,7 +60,7 @@ public class AudioManager : MonoBehaviour
 	
 	public void Play(string strPath, float fVolume = 1.0f)
 	{
-		if( 0 == GameMain.Instance.nSoundEnable)
+		if( 0 == MainManager.Instance.nSoundEnable)
 			return;
 
 		AudioClip clip = Resources.Load( strPath) as AudioClip;

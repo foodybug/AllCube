@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 
-public class UIManager : MonoBehaviour
+public class UI_Play : MonoBehaviour
 {
 	public enum eLevelClearType
 	{
@@ -12,8 +12,8 @@ public class UIManager : MonoBehaviour
 		eLevelClearType_Bronze
 	}
 
-	static UIManager m_instance;
-	public static UIManager Instance{ get{ return m_instance;}}
+	static UI_Play m_instance;
+	public static UI_Play Instance{ get{ return m_instance;}}
 
 	private int m_nLevelBuff = 0;
 	private eGameState m_eOldState = eGameState.eGameState_Logo;
@@ -450,7 +450,7 @@ public class UIManager : MonoBehaviour
 		btnNext.gameObject.SetActive( false);
 		texNextBtnBg.gameObject.SetActive( false);
 
-		if( (int)eLevelClearType.eLevelClearType_None == (int)MainManager.lastClearType)
+		if( eLevelClearType.eLevelClearType_None == MainManager.lastClearType)
 		{
 			if (MainManager.Instance != null)
 				MainManager.Instance.StartLevel( MainManager.nCurLevelStatic);
@@ -568,7 +568,7 @@ public class UIManager : MonoBehaviour
 		if (texMsgBoxBg != null && false == texMsgBoxBg.gameObject.activeInHierarchy && texNextBtnBg != null)
 			texNextBtnBg.gameObject.SetActive( true);
 
-		if( (int)eLevelClearType.eLevelClearType_None == (int)MainManager.lastClearType)
+		if( eLevelClearType.eLevelClearType_None == MainManager.lastClearType)
 		{
 			AudioManager.Instance.Play( "Sound/fail", 0.3f);
 			if (textNext != null) textNext.text = "Retry";
@@ -611,9 +611,9 @@ public class UIManager : MonoBehaviour
 			
 			if (texResultIcon != null)
 			{
-				if( (int)eLevelClearType.eLevelClearType_Gold == (int)MainManager.lastClearType)
+				if( eLevelClearType.eLevelClearType_Gold == MainManager.lastClearType)
 					texResultIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
-				else if( (int)eLevelClearType.eLevelClearType_Silver == (int)MainManager.lastClearType)
+				else if( eLevelClearType.eLevelClearType_Silver == MainManager.lastClearType)
 					texResultIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
 				else
 					texResultIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;

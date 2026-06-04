@@ -42,11 +42,20 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        if (eGameState.eGameState_Play != GameMain.Instance.eCurState)
+        if (eGameState.eGameState_Play != MainManager.Instance.eCurState)
             return;
 
-        if (UIManager.Instance != null && true == UIManager.Instance.bPauseTime)
-            return;
+        if (UI_Play.Instance != null && true == UI_Play.Instance.bPauseTime)
+        {
+            bool isWaitingStart = (PlayMain.Instance != null && !PlayMain.Instance.IsGameStarted);
+            bool isPopUpActive = (UI_Play.Instance.goHelpMsgBox != null && UI_Play.Instance.goHelpMsgBox.activeInHierarchy)
+                              || (UI_Play.Instance.goMsgBox != null && UI_Play.Instance.goMsgBox.activeInHierarchy);
+
+            if (!isWaitingStart || isPopUpActive)
+            {
+                return;
+            }
+        }
 
         forceWait -= Time.deltaTime;
 
@@ -59,7 +68,10 @@ public class Player : MonoBehaviour
             bool bInput = false;
 
             if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
+            {
                 bInput = true;
+                Debug.Log($"[Player Debug] Input detected. KeyCode/Mouse. AllowAddForce: {AllowAddForce}, JumpCount: {m_jumpCount}");
+            }
 
             if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
             {
@@ -71,18 +83,28 @@ public class Player : MonoBehaviour
                     {
                     }
                     else
+                    {
                         bInput = true;
+                        Debug.Log($"[Player Debug] Touch Input detected. AllowAddForce: {AllowAddForce}, JumpCount: {m_jumpCount}");
+                    }
                 }
                 else
                 {
                     bInput = true;
+                    Debug.Log($"[Player Debug] Touch Input detected (No UI Camera). AllowAddForce: {AllowAddForce}, JumpCount: {m_jumpCount}");
                 }
             }
 
             if (bInput)
             {
+                if (PlayMain.Instance != null && !PlayMain.Instance.IsGameStarted)
+                {
+                    PlayMain.Instance.StartGame();
+                }
+
                 moveX = nextJumpDir;
                 nextJumpDir *= -1.0f;
+                Debug.Log($"[Player Debug] Jump prepared. moveX: {moveX}, nextJumpDir: {nextJumpDir}");
             }
         }
     }
@@ -91,6 +113,7 @@ public class Player : MonoBehaviour
     {
         if (AllowAddForce && moveX != 0)
         {
+            Debug.Log($"[Player Debug] FixedUpdate Jump execution. JumpCount: {m_jumpCount}, moveX: {moveX}");
             if (m_jumpCount > 0)
             {
                 m_jumpCount--;
@@ -99,7 +122,6 @@ public class Player : MonoBehaviour
                 if (GetComponent<Rigidbody>() != null)
                 {
                     Rigidbody rb = GetComponent<Rigidbody>();
-                    // 이전 점프의 물리량(속도, 회전)이 남아있어 반대 방향 점프 시 상쇄되는 문제 방지
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
 
@@ -108,7 +130,12 @@ public class Player : MonoBehaviour
 
                     AudioManager.Instance.Play("Sound/jump", 0.5f);
                     lastMoveX = moveX;
+                    Debug.Log($"[Player Debug] Jump force applied. New velocity: {rb.linearVelocity}, New JumpCount: {m_jumpCount}");
                 }
+            }
+            else
+            {
+                Debug.LogWarning("[Player Debug] Jump failed because JumpCount is 0!");
             }
 
             moveX = 0;
@@ -170,11 +197,23 @@ public class Player : MonoBehaviour
         CubeMoveX cubeMoveX = collision.gameObject.GetComponent<CubeMoveX>();
         if (null != cubeMoveX)
         {
-            Vector3 vForce = GetComponent<Rigidbody>().position - cubeMoveX.CurPos;
+            Vector3 playerPos = GetComponent<Rigidbody>().position;
+            Vector3 vForce = playerPos - cubeMoveX.CurPos;
+            Debug.Log($"[Player Debug] Collision with CubeMoveX. Player Pos: {playerPos}, Block Pos: {cubeMoveX.CurPos}, Raw Force Vector: {vForce}");
+            if (vForce.sqrMagnitude < 0.001f)
+            {
+                vForce = new Vector3(nextJumpDir, 1.0f, 0.0f);
+            }
             vForce.Normalize();
+            if (vForce.y < 0.5f)
+            {
+                vForce.y = 0.5f;
+                vForce.Normalize();
+            }
             vForce *= moveCubeForce;
             GetComponent<Rigidbody>().AddForce(vForce, ForceMode.Impulse);
             AudioManager.Instance.Play("Sound/jumppad");
+            Debug.Log($"[Player Debug] CubeMoveX Force Applied: {vForce}. Player Velocity: {GetComponent<Rigidbody>().linearVelocity}");
 
             return;
         }
@@ -183,11 +222,23 @@ public class Player : MonoBehaviour
         CubeMoveY cubeMoveY = collision.gameObject.GetComponent<CubeMoveY>();
         if (null != cubeMoveY)
         {
-            Vector3 vForce = GetComponent<Rigidbody>().position - cubeMoveY.CurPos;
+            Vector3 playerPos = GetComponent<Rigidbody>().position;
+            Vector3 vForce = playerPos - cubeMoveY.CurPos;
+            Debug.Log($"[Player Debug] Collision with CubeMoveY. Player Pos: {playerPos}, Block Pos: {cubeMoveY.CurPos}, Raw Force Vector: {vForce}");
+            if (vForce.sqrMagnitude < 0.001f)
+            {
+                vForce = new Vector3(nextJumpDir, 1.0f, 0.0f);
+            }
             vForce.Normalize();
+            if (vForce.y < 0.5f)
+            {
+                vForce.y = 0.5f;
+                vForce.Normalize();
+            }
             vForce *= moveCubeForce;
             GetComponent<Rigidbody>().AddForce(vForce, ForceMode.Impulse);
             AudioManager.Instance.Play("Sound/jumppad");
+            Debug.Log($"[Player Debug] CubeMoveY Force Applied: {vForce}. Player Velocity: {GetComponent<Rigidbody>().linearVelocity}");
 
             return;
         }

@@ -3,19 +3,58 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+public enum eGameState
+{
+    eGameState_Logo = 0,
+    eGameState_Select,
+    eGameState_Play,
+    eGameState_Result,
+    eGameState_Pause
+}
+
 public class MainManager : MonoBehaviour
 {
     private static MainManager m_instance;
-    public static MainManager Instance { get { return m_instance; } }
+    public static MainManager Instance
+    {
+        get
+        {
+            if (m_instance == null)
+            {
+                SceneManager.LoadScene("Title");
+                return null;
+            }
+            return m_instance;
+        }
+    }
 
     public static bool StartWithFadeIn = false;
 
-    [Header("Transition Settings")]
-    public bool IsTransitioning { get; private set; }
-    private GameObject m_transitionContainer;
-    private RawImage[,] m_transitionGrid;
-    private int m_gridCols = 10;
-    private int m_gridRows = 6;
+    [Header("Global Game State & Data")]
+    public eGameState eCurState = eGameState.eGameState_Logo;
+    public int nLevelCount = 10;
+    public int[] nTime_gold;
+    public int[] nTime_silver;
+    public int[] nTime_bronze;
+    public int[] nClearType;
+    public int nCurLevel = 1;
+    public int nSaveLevel = 1;
+    public int nSoundEnable = 1;
+
+    [Header("Static Match Data Backups")]
+    public static int nCurLevelStatic = 1;
+    public static int lastTotalCoins = 0;
+    public static int lastGameTime = 0;
+    public static UI_Play.eLevelClearType lastClearType = UI_Play.eLevelClearType.eLevelClearType_None;
+    public static bool StartInLevelSelect = false;
+
+    public bool IsTransitioning
+    {
+        get
+        {
+            return TransitionCanvas.Instance != null && TransitionCanvas.Instance.IsTransitioning;
+        }
+    }
 
     void Awake()
     {
@@ -27,9 +66,13 @@ public class MainManager : MonoBehaviour
         }
         m_instance = this;
         DontDestroyOnLoad(gameObject);
+        Application.targetFrameRate = 60;
 
         // 씬 로드 완료 이벤트 구독
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+        // 데이터 로드
+        _LoadData();
     }
 
     void OnDestroy()
@@ -43,176 +86,255 @@ public class MainManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         Debug.Log("[MainManager Debug] OnSceneLoaded triggered. Active Scene: " + scene.name + ", StartWithFadeIn: " + StartWithFadeIn);
+
+
+        if (scene.name == "Title")
+        {
+            if (StartInLevelSelect)
+            {
+                eCurState = eGameState.eGameState_Select;
+            }
+            else
+            {
+                eCurState = eGameState.eGameState_Logo;
+            }
+        }
+        else if (scene.name == "Play")
+        {
+            eCurState = eGameState.eGameState_Play;
+        }
+        else if (scene.name == "Result")
+        {
+            eCurState = eGameState.eGameState_Result;
+            if (UI_Play.Instance != null)
+            {
+                UI_Play.Instance.SetupResultScreen();
+            }
+        }
+
         if (StartWithFadeIn)
         {
             StartWithFadeIn = false;
-            StartCoroutine(StartFadeInCoroutine());
+            StartCoroutine(ReturnToScene_CR());
         }
     }
 
-    private void CreateTransitionGrid()
+    private void EnsureTransitionCanvasExists()
     {
-        if (m_transitionContainer != null) return;
+        if (TransitionCanvas.Instance != null) return;
 
-        m_transitionContainer = new GameObject("TransitionContainer");
-        DontDestroyOnLoad(m_transitionContainer);
-
-        Canvas canvas = m_transitionContainer.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 9999;
-
-        CanvasScaler scaler = m_transitionContainer.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(800, 480);
-
-        m_transitionGrid = new RawImage[m_gridRows, m_gridCols];
-
-        float cellWidthNormalized = 1.0f / m_gridCols;
-        float cellHeightNormalized = 1.0f / m_gridRows;
-
-        for (int r = 0; r < m_gridRows; r++)
+        GameObject prefab = Resources.Load<GameObject>("Prefabs/TransitionCanvas");
+        if (prefab == null)
         {
-            for (int c = 0; c < m_gridCols; c++)
-            {
-                GameObject cellGo = new GameObject("GridCell_" + r + "_" + c);
-                cellGo.transform.SetParent(m_transitionContainer.transform, false);
-
-                RawImage img = cellGo.AddComponent<RawImage>();
-                img.color = new Color(0.12f, 0.12f, 0.12f, 1f); // Sleek dark gray
-                img.raycastTarget = false;
-
-                RectTransform cellRect = cellGo.GetComponent<RectTransform>();
-                cellRect.anchorMin = new Vector2(c * cellWidthNormalized, r * cellHeightNormalized);
-                cellRect.anchorMax = new Vector2((c + 1) * cellWidthNormalized, (r + 1) * cellHeightNormalized);
-                cellRect.pivot = new Vector2(0.5f, 0.5f);
-                cellRect.anchoredPosition = Vector2.zero;
-                cellRect.sizeDelta = Vector2.zero;
-                cellRect.localScale = Vector3.zero;
-
-                m_transitionGrid[r, c] = img;
-            }
+            prefab = Resources.Load<GameObject>("TransitionCanvas");
         }
+
+        GameObject inst;
+        if (prefab != null)
+        {
+            Debug.Log("[MainManager Debug] Instantiating TransitionCanvas from resources prefab.");
+            inst = Instantiate(prefab);
+            inst.name = "TransitionCanvas";
+        }
+        else
+        {
+            Debug.Log("[MainManager Debug] TransitionCanvas prefab not found. Dynamically creating fallback TransitionCanvas.");
+            inst = new GameObject("TransitionCanvas");
+            inst.AddComponent<TransitionCanvas>();
+        }
+    }
+
+    private IEnumerator ReturnToScene_CR()
+    {
+        EnsureTransitionCanvasExists();
+        yield return StartCoroutine(TransitionCanvas.Instance.PlayFadeIn_CR());
     }
 
     public void TransitionToScene(string sceneName)
     {
         if (IsTransitioning) return;
-        StartCoroutine(TransitionToSceneCoroutine(sceneName));
+        StartCoroutine(TransitionToScene_CR(sceneName));
     }
 
-    private IEnumerator TransitionToSceneCoroutine(string sceneName)
+    private IEnumerator TransitionToScene_CR(string sceneName)
     {
-        IsTransitioning = true;
-        CreateTransitionGrid();
-
-        CanvasGroup group = m_transitionContainer.GetComponent<CanvasGroup>();
-        if (group == null)
-        {
-            group = m_transitionContainer.AddComponent<CanvasGroup>();
-        }
-        group.blocksRaycasts = true;
-
-        float centerRow = (m_gridRows - 1) / 2.0f;
-        float centerCol = (m_gridCols - 1) / 2.0f;
-        float maxDist = Mathf.Sqrt(centerRow * centerRow + centerCol * centerCol);
-
-        // 1. Scale Up Grid Blocks (Outward from center)
-        float duration = 0.4f;
-        float cellAnimTime = 0.2f;
-        float elapsed = 0.0f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            for (int r = 0; r < m_gridRows; r++)
-            {
-                for (int c = 0; c < m_gridCols; c++)
-                {
-                    float dist = Mathf.Sqrt((r - centerRow) * (r - centerRow) + (c - centerCol) * (c - centerCol));
-                    float normalizedDist = dist / maxDist;
-
-                    float delay = normalizedDist * (duration - cellAnimTime);
-                    float cellProgress = Mathf.Clamp01((elapsed - delay) / cellAnimTime);
-                    m_transitionGrid[r, c].transform.localScale = new Vector3(cellProgress, cellProgress, 1f);
-                }
-            }
-            yield return null;
-        }
-
-        for (int r = 0; r < m_gridRows; r++)
-        {
-            for (int c = 0; c < m_gridCols; c++)
-            {
-                m_transitionGrid[r, c].transform.localScale = Vector3.one;
-            }
-        }
-
-        // 화면이 큐브 격자로 완전히 덮여 렌더링될 수 있도록 아주 미세하게 대기
-        yield return new WaitForSecondsRealtime(0.05f);
+        EnsureTransitionCanvasExists();
+        yield return StartCoroutine(TransitionCanvas.Instance.PlayFadeOut_CR());
 
         StartWithFadeIn = true;
         SceneManager.LoadScene(sceneName);
     }
 
-    private IEnumerator StartFadeInCoroutine()
-    {
-        IsTransitioning = true;
-        CreateTransitionGrid();
+    // --- 글로벌 생명주기 및 레벨 제어 로직 ---
 
-        for (int r = 0; r < m_gridRows; r++)
+    public void StartNextLevel()
+    {
+        nCurLevel++;
+        if (nCurLevel > nLevelCount)
+            nCurLevel = nLevelCount;
+        StartLevel(nCurLevel);
+    }
+
+    public void StartLevel(int nLevel)
+    {
+        Debug.Log("[MainManager Debug] StartLevel called. Target Level: " + nLevel + ", Current Scene: " + SceneManager.GetActiveScene().name);
+        nCurLevelStatic = nLevel;
+        nCurLevel = nLevel;
+        eCurState = eGameState.eGameState_Play;
+
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName != "Play")
         {
-            for (int c = 0; c < m_gridCols; c++)
+            TransitionToScene("Play");
+        }
+        else
+        {
+            if (PlayMain.Instance != null)
             {
-                m_transitionGrid[r, c].transform.localScale = Vector3.one;
+                Debug.Log("[MainManager Debug] Already in Play scene. Re-initializing stage.");
+                PlayMain.Instance.SetupPlayStage(nLevel);
+            }
+            else
+            {
+                Debug.LogWarning("[MainManager Debug] Already in Play scene but GameMain.Instance is missing!");
+            }
+        }
+    }
+
+    public void GoLevelSelectScene()
+    {
+        eCurState = eGameState.eGameState_Select;
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName != "Title")
+        {
+            StartInLevelSelect = true;
+            TransitionToScene("Title");
+        }
+        else
+        {
+            if (PlayMain.Instance != null)
+            {
+                PlayMain.Instance.CleanUpStage();
+            }
+            else
+            {
+                MapManager.Instance.UnLoadCubeMap();
+            }
+
+            if (UI_Play.Instance != null)
+            {
+                UI_Play.Instance.CreateLevelSelectUI();
+            }
+        }
+    }
+
+    private void _LoadData()
+    {
+        if (nLevelCount <= 0) nLevelCount = 10;
+        if (nClearType == null || nClearType.Length < nLevelCount)
+        {
+            nClearType = new int[nLevelCount];
+        }
+        for (int i = 0; i < nLevelCount; i++)
+            nClearType[i] = 0;
+
+        string[] res = System.IO.Directory.GetFiles(Application.persistentDataPath, "info.inf");
+
+        if (res.Length > 0)
+        {
+            try
+            {
+                using (System.IO.FileStream fs = new System.IO.FileStream(res[0], System.IO.FileMode.Open))
+                {
+                    if (null != fs)
+                    {
+                        using (System.IO.BinaryReader br = new System.IO.BinaryReader(fs))
+                        {
+                            nSaveLevel = br.ReadInt32();
+                            nSoundEnable = br.ReadInt32();
+                            int nCount = br.ReadInt32();
+
+                            if (nClearType.Length < nCount)
+                            {
+                                nClearType = new int[nCount];
+                            }
+                            for (int i = 0; i < nCount; i++)
+                            {
+                                if (i < nClearType.Length)
+                                    nClearType[i] = br.ReadInt32();
+                                else
+                                    br.ReadInt32();
+                            }
+                        }
+                    }
+                }
+                Debug.Log("[MainManager Debug] Game Data successfully loaded from info.inf. SaveLevel: " + nSaveLevel + ", Sound: " + nSoundEnable);
+                return;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("[MainManager Debug] Failed to read save file info.inf. Creating new file. Error: " + ex.Message);
             }
         }
 
-        CanvasGroup group = m_transitionContainer.GetComponent<CanvasGroup>();
-        if (group == null)
+        nSaveLevel = 1;
+        nSoundEnable = 1;
+    }
+
+    public void SaveData()
+    {
+        if (nSaveLevel < nCurLevel)
+            nSaveLevel = nCurLevel;
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder(Application.persistentDataPath);
+        sb.Append("/info.inf");
+
+        try
         {
-            group = m_transitionContainer.AddComponent<CanvasGroup>();
-        }
-        group.blocksRaycasts = true;
-
-        // 새로운 씬/상태 배치가 완전히 완료될 때까지 검은 화면에서 대기
-        yield return new WaitForSecondsRealtime(0.15f);
-
-        float centerRow = (m_gridRows - 1) / 2.0f;
-        float centerCol = (m_gridCols - 1) / 2.0f;
-        float maxDist = Mathf.Sqrt(centerRow * centerRow + centerCol * centerCol);
-
-        // Scale Down Grid Blocks (Outward from center)
-        float duration = 0.4f;
-        float cellAnimTime = 0.2f;
-        float elapsed = 0.0f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            for (int r = 0; r < m_gridRows; r++)
+            using (System.IO.FileStream fs = new System.IO.FileStream(sb.ToString(), System.IO.FileMode.Create))
             {
-                for (int c = 0; c < m_gridCols; c++)
-                {
-                    float dist = Mathf.Sqrt((r - centerRow) * (r - centerRow) + (c - centerCol) * (c - centerCol));
-                    float normalizedDist = dist / maxDist;
+                if (null == fs)
+                    return;
 
-                    float delay = normalizedDist * (duration - cellAnimTime);
-                    float cellProgress = Mathf.Clamp01(1.0f - ((elapsed - delay) / cellAnimTime));
-                    m_transitionGrid[r, c].transform.localScale = new Vector3(cellProgress, cellProgress, 1f);
+                fs.Seek(0, System.IO.SeekOrigin.Begin);
+
+                using (System.IO.BinaryWriter bw = new System.IO.BinaryWriter(fs))
+                {
+                    bw.Write(nSaveLevel);
+                    bw.Write(nSoundEnable);
+                    bw.Write(nLevelCount);
+                    for (int i = 0; i < nLevelCount; i++)
+                    {
+                        if (i < nClearType.Length)
+                            bw.Write(nClearType[i]);
+                        else
+                            bw.Write(0);
+                    }
                 }
             }
-            yield return null;
+            Debug.Log("[MainManager Debug] Game Data successfully saved to info.inf. SaveLevel: " + nSaveLevel + ", Sound: " + nSoundEnable);
         }
-
-        for (int r = 0; r < m_gridRows; r++)
+        catch (System.Exception ex)
         {
-            for (int c = 0; c < m_gridCols; c++)
-            {
-                m_transitionGrid[r, c].transform.localScale = Vector3.zero;
-            }
+            Debug.LogError("[MainManager Debug] Failed to save game data. Error: " + ex.Message);
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        SaveData();
+    }
+
+    void OnApplicationPause(bool pause)
+    {
+        if (true == pause)
+        {
+            SaveData();
         }
 
-        group.blocksRaycasts = false;
-        IsTransitioning = false;
+        if (UI_Play.Instance != null)
+        {
+            UI_Play.Instance.PauseTime(pause);
+        }
     }
 }
