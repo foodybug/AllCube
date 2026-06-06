@@ -48,8 +48,8 @@ public class Player : MonoBehaviour
         if (UI_Play.Instance != null && true == UI_Play.Instance.bPauseTime)
         {
             bool isWaitingStart = (PlayMain.Instance != null && !PlayMain.Instance.IsGameStarted);
-            bool isPopUpActive = (UI_Play.Instance.goHelpMsgBox != null && UI_Play.Instance.goHelpMsgBox.activeInHierarchy)
-                              || (UI_Play.Instance.goMsgBox != null && UI_Play.Instance.goMsgBox.activeInHierarchy);
+            bool isPopUpActive = (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goHelpMsgBox != null && UI_Play.Instance.ui.goHelpMsgBox.activeInHierarchy)
+                              || (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goMsgBox != null && UI_Play.Instance.ui.goMsgBox.activeInHierarchy);
 
             if (!isWaitingStart || isPopUpActive)
             {

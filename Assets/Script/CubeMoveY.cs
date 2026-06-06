@@ -26,9 +26,9 @@ public class CubeMoveY : MonoBehaviour
 			return;
 
 		bool isHelpActive = false;
-		if (UI_Play.Instance != null && UI_Play.Instance.goHelpMsgBox != null)
+		if (UI_Play.Instance != null && UI_Play.Instance.ui != null && UI_Play.Instance.ui.goHelpMsgBox != null)
 		{
-			isHelpActive = UI_Play.Instance.goHelpMsgBox.activeInHierarchy;
+			isHelpActive = UI_Play.Instance.ui.goHelpMsgBox.activeInHierarchy;
 		}
 
 		if (eGameState.eGameState_Pause == MainManager.Instance.eCurState || isHelpActive)

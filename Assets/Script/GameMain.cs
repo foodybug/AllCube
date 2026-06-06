@@ -97,8 +97,8 @@ public class GameMain : MonoBehaviour
         if (UI_Play.Instance != null)
         {
             UI_Play.Instance.SetPlayInfo(nLevel, 0, 10);
-            if (false == UI_Play.Instance.goBtnRetry.activeInHierarchy)
-                UI_Play.Instance.goBtnRetry.SetActive(true);
+            if (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goBtnRetry != null && false == UI_Play.Instance.ui.goBtnRetry.activeInHierarchy)
+                UI_Play.Instance.ui.goBtnRetry.SetActive(true);
             UI_Play.Instance.StartTime();
 
             UI_Play.Instance.OpenHelpMsgBox_1(nLevel);

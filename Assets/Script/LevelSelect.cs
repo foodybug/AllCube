@@ -22,8 +22,8 @@ public class LevelSelect : MonoBehaviour
 
 		if (UI_Play.Instance != null)
 		{
-			UI_Play.Instance.goLevelSelecter.SetActive( false);
-			UI_Play.Instance.textSelectLevel.gameObject.SetActive( false);
+			if (UI_Play.Instance.ui.goLevelSelecter != null) UI_Play.Instance.ui.goLevelSelecter.SetActive(false);
+			if (UI_Play.Instance.ui.textSelectLevel != null) UI_Play.Instance.ui.textSelectLevel.gameObject.SetActive(false);
 		}
 		
 		MainManager.Instance.nCurLevel = nLevel;
