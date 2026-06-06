@@ -112,10 +112,10 @@ public class UI_Play : MonoBehaviour
 	{
 		if( MainManager.Instance != null && eGameState.eGameState_Play == MainManager.Instance.eCurState)
 		{
-			if( true == goHelpMsgBox.activeInHierarchy)
+			if( goHelpMsgBox != null && true == goHelpMsgBox.activeInHierarchy)
 				return;
 
-			if (MapManager.Instance != null && CameraManager.Instance.Target != null)
+			if (MapManager.Instance != null && CameraManager.Instance != null && CameraManager.Instance.Target != null)
 			{
 				Player player = CameraManager.Instance.Target.GetComponent<Player>();
 				if (player != null)
@@ -148,60 +148,73 @@ public class UI_Play : MonoBehaviour
 		nGameTime = (int)( fCurTime - m_fStartTime);
 
 		string strTimeRes = string.Empty;
-		int nTime_gold = MainManager.Instance.nTime_gold[ m_nLevelBuff - 1];
-		int nTime_silver = MainManager.Instance.nTime_silver[ m_nLevelBuff - 1];
-		int nTime_bronze = MainManager.Instance.nTime_bronze[ m_nLevelBuff - 1];
+
+		int idx = m_nLevelBuff - 1;
+		int nTime_gold = 0;
+		int nTime_silver = 0;
+		int nTime_bronze = 0;
+
+		if (MainManager.Instance != null)
+		{
+			if (MainManager.Instance.nTime_gold != null && idx >= 0 && idx < MainManager.Instance.nTime_gold.Length)
+				nTime_gold = MainManager.Instance.nTime_gold[idx];
+			if (MainManager.Instance.nTime_silver != null && idx >= 0 && idx < MainManager.Instance.nTime_silver.Length)
+				nTime_silver = MainManager.Instance.nTime_silver[idx];
+			if (MainManager.Instance.nTime_bronze != null && idx >= 0 && idx < MainManager.Instance.nTime_bronze.Length)
+				nTime_bronze = MainManager.Instance.nTime_bronze[idx];
+		}
+
 		int nMin = 0;
 		int nSec = 0;
 
 		if( nGameTime <= nTime_gold)
 		{
-			if( false == texTimeIcon.gameObject.activeInHierarchy)
+			if( texTimeIcon != null && false == texTimeIcon.gameObject.activeInHierarchy)
 				texTimeIcon.gameObject.SetActive( true);
 
-			if( eLevelClearType.eLevelClearType_Gold != eClearType)
+			if( texTimeIcon != null && eLevelClearType.eLevelClearType_Gold != eClearType)
 				texTimeIcon.texture = Resources.Load( "UI/ui_time_gold") as Texture;
 
 			nMin = nTime_gold / 60;
 			nSec = nTime_gold % 60;
 			strTimeRes = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-			textTime.color = Color.yellow;
+			if (textTime != null) textTime.color = Color.yellow;
 			eClearType = eLevelClearType.eLevelClearType_Gold;
 		}
 		else if( nGameTime <= nTime_silver)
 		{
-			if( eLevelClearType.eLevelClearType_Silver != eClearType)
+			if( texTimeIcon != null && eLevelClearType.eLevelClearType_Silver != eClearType)
 				texTimeIcon.texture = Resources.Load( "UI/ui_time_silver") as Texture;
 
 			nMin = nTime_silver / 60;
 			nSec = nTime_silver % 60;
 			strTimeRes = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-			textTime.color = Color.white;
+			if (textTime != null) textTime.color = Color.white;
 			eClearType = eLevelClearType.eLevelClearType_Silver;
 		}
 		else if( nGameTime <= nTime_bronze)
 		{
-			if( eLevelClearType.eLevelClearType_Bronze != eClearType)
+			if( texTimeIcon != null && eLevelClearType.eLevelClearType_Bronze != eClearType)
 				texTimeIcon.texture = Resources.Load( "UI/ui_time_bronze") as Texture;
 
 			nMin = nTime_bronze / 60;
 			nSec = nTime_bronze % 60;
 			strTimeRes = string.Format( "{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-			textTime.color = new Color( 1.0f, 0.6823f, 0.0f);
+			if (textTime != null) textTime.color = new Color( 1.0f, 0.6823f, 0.0f);
 			eClearType = eLevelClearType.eLevelClearType_Bronze;
 		}
 		else
 		{
-			texTimeIcon.gameObject.SetActive( false);
+			if (texTimeIcon != null) texTimeIcon.gameObject.SetActive( false);
 			strTimeRes = "--:--";
-			textTime.color = Color.red;
+			if (textTime != null) textTime.color = Color.red;
 			eClearType = eLevelClearType.eLevelClearType_None;
 		}
 
 		nMin = nGameTime / 60;
 		nSec = nGameTime % 60;
 		string strTime = string.Format( "\n{0:D2}", nMin) + string.Format( ":{0:D2}", nSec);
-		textTime.text = strTimeRes + strTime;
+		if (textTime != null) textTime.text = strTimeRes + strTime;
 	}
 
 	public void SetPlayInfo(int nLevel, int nCoin, int nJumps)
