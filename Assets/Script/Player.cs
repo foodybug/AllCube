@@ -101,10 +101,12 @@ public class Player : MonoBehaviour
                 {
                     PlayMain.Instance.StartGame();
                 }
-
-                moveX = nextJumpDir;
-                nextJumpDir *= -1.0f;
-                Debug.Log($"[Player Debug] Jump prepared. moveX: {moveX}, nextJumpDir: {nextJumpDir}");
+                else
+                {
+                    moveX = nextJumpDir;
+                    nextJumpDir *= -1.0f;
+                    Debug.Log($"[Player Debug] Jump prepared. moveX: {moveX}, nextJumpDir: {nextJumpDir}");
+                }
             }
         }
     }
@@ -140,6 +142,19 @@ public class Player : MonoBehaviour
 
             moveX = 0;
         }
+    }
+
+    public void ExecuteFirstJump()
+    {
+        StartCoroutine(FirstJumpDelay_CR(nextJumpDir));
+        nextJumpDir *= -1.0f;
+    }
+
+    private IEnumerator FirstJumpDelay_CR(float jumpDir)
+    {
+        yield return new WaitForSeconds(0.05f);
+        moveX = jumpDir;
+        Debug.Log($"[Player Debug] First Jump executed after safety time delay. moveX: {moveX}");
     }
 
     public void AddJumps(int count)

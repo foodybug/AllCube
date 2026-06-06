@@ -118,6 +118,12 @@ public class PlayMain : MonoBehaviour
                 playerRb.isKinematic = false;
                 playerRb.WakeUp();
             }
+
+            Player player = m_goPlayer.GetComponent<Player>();
+            if (player != null)
+            {
+                player.ExecuteFirstJump();
+            }
         }
 
         if (UI_Play.Instance != null)

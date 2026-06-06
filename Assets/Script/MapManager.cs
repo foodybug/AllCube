@@ -33,6 +33,7 @@ public class MapManager : MonoBehaviour
 	public int TotalCoinsCollected { get { return m_nTotalCoinsCollected; } }
 
 	private int m_highestGeneratedY = 0;
+	private GameObject m_goFloor;
 
 	public int CoinCount { get{ return m_listCoin.Count;}}
 
@@ -69,25 +70,17 @@ public class MapManager : MonoBehaviour
 				// 2. Clean up old blocks that are far below the player Y - 10
 				CleanupBlocksBelow(Mathf.FloorToInt(playerY) - 10);
 
-				// 3. Fall to death check (6 units below the camera Y position)
-				float cameraY = CameraManager.Instance.mainCamera.transform.position.y;
-				if (playerGo.transform.position.y < cameraY - 6.0f * (m_fCubeSize > 0f ? m_fCubeSize : 1.0f))
+				// 3. Fall to death check (below the bottom floor plane after game starts)
+				if (PlayMain.Instance != null && PlayMain.Instance.IsGameStarted)
 				{
-					TriggerGameOver();
-				}
-
-				// 3-1. Jump Count Game Over Check (Allows final jump ascent for coin collection grace period)
-				Player player = playerGo.GetComponent<Player>();
-				if (player != null && player.JumpCount <= 0)
-				{
-					Rigidbody rb = playerGo.GetComponent<Rigidbody>();
-					if (rb == null || rb.linearVelocity.y <= 0.01f)
+					if (playerGo.transform.position.y < -1.4f)
 					{
 						TriggerGameOver();
 					}
 				}
 
 				// 4. Dynamic warning / visual feedback on all active coins
+				Player player = playerGo.GetComponent<Player>();
 				if (player != null)
 				{
 					float speedMultiplier = Mathf.Max(1.0f, 15.0f / (player.JumpCount + 1f));
@@ -128,8 +121,28 @@ public class MapManager : MonoBehaviour
 		m_highestGeneratedY = 0;
 		m_nTotalCoinsCollected = 0;
 
+		SpawnFloor();
+
 		// Spawn starting platform and walls
 		GenerateRowsUpTo(15);
+	}
+
+	private void SpawnFloor()
+	{
+		if (m_goFloor == null)
+		{
+			m_goFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+			m_goFloor.name = "Floor_DeadZone";
+			
+			Renderer rend = m_goFloor.GetComponent<Renderer>();
+			if (rend != null)
+			{
+				rend.material.color = Color.gray;
+			}
+		}
+
+		m_goFloor.transform.position = new Vector3(0f, -1.5f, 0f);
+		m_goFloor.transform.localScale = new Vector3(10f, 1f, 10f);
 	}
 
 	private eMapProp _GetMapProp(Color color)
@@ -252,6 +265,12 @@ public class MapManager : MonoBehaviour
 			Util.MyDestroy( go);
 		
 		m_listCoin.Clear();
+
+		if (m_goFloor != null)
+		{
+			Util.MyDestroy(m_goFloor);
+			m_goFloor = null;
+		}
 	}
 
 	public void RemoveCoin(GameObject go)
@@ -346,46 +365,12 @@ public class MapManager : MonoBehaviour
 			m_listCube.Add(_CreateCube(-4, y, eMapProp.eMapProp_Normal));
 			m_listCube.Add(_CreateCube(4, y, eMapProp.eMapProp_Normal));
 
-			// Remove early bottom floor blocks to prevent player overlap at start
-			if (y >= 3)
+			// Remove early bottom floor blocks to prevent player overlap at start, but keep starting platform at y == 0
+			if (y == 0)
 			{
-				if (y % 3 == 0)
-				{
-					bool isLeft = (y / 3) % 2 == 1;
-					
-					eMapProp platformType = eMapProp.eMapProp_Normal;
-					float rand = Random.value;
-					if (rand < 0.20f)
-					{
-						platformType = eMapProp.eMapProp_Break;
-					}
-					else if (rand < 0.30f)
-					{
-						platformType = eMapProp.eMapProp_MoveX;
-					}
-
-					if (isLeft)
-					{
-						m_listCube.Add(_CreateCube(-2, y, platformType));
-						m_listCube.Add(_CreateCube(-1, y, platformType));
-						m_listCoin.Add(_CreateCoin(-2, y + 1));
-					}
-					else
-					{
-						m_listCube.Add(_CreateCube(1, y, platformType));
-						m_listCube.Add(_CreateCube(2, y, platformType));
-						m_listCoin.Add(_CreateCoin(2, y + 1));
-					}
-
-					if (platformType == eMapProp.eMapProp_MoveX)
-					{
-						CubeMoveX moveX = m_listCube[m_listCube.Count - 1].GetComponent<CubeMoveX>();
-						if (moveX != null)
-						{
-							moveX.SetMove(1.5f * m_fCubeSize, 1.5f * m_fCubeSize);
-						}
-					}
-				}
+				eMapProp platformType = eMapProp.eMapProp_Normal;
+				m_listCube.Add(_CreateCube(1, y, platformType));
+				m_listCube.Add(_CreateCube(2, y, platformType));
 			}
 		}
 		m_highestGeneratedY = targetY + 1;
