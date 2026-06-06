@@ -20,7 +20,7 @@ public class LevelSelect : MonoBehaviour
 	{
 		AudioManager.Instance.Play( "Sound/ui_button_down");
 
-		if (UI_Play.Instance != null)
+		if (UI_Play.Instance != null && UI_Play.Instance.ui != null)
 		{
 			if (UI_Play.Instance.ui.goLevelSelecter != null) UI_Play.Instance.ui.goLevelSelecter.SetActive(false);
 			if (UI_Play.Instance.ui.textSelectLevel != null) UI_Play.Instance.ui.textSelectLevel.gameObject.SetActive(false);

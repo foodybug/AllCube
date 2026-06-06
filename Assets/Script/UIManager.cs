@@ -27,7 +27,7 @@ public class UIManager : MonoBehaviour
     public int nGameTime = 0;
     public eLevelClearType eClearType = eLevelClearType.eLevelClearType_None;
 
-    public PlayUIElements ui;
+    public PlayUIElements ui = new PlayUIElements();
 
     private int m_nCurrentJumps = 10;
 
@@ -265,7 +265,8 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            if ((ui.goHelpMsgBox == null || false == ui.goHelpMsgBox.activeInHierarchy) && 
+            if (ui != null && 
+                (ui.goHelpMsgBox == null || false == ui.goHelpMsgBox.activeInHierarchy) && 
                 (ui.goMsgBox == null || false == ui.goMsgBox.activeInHierarchy))
             {
                 if (m_bPauseTime != bPause)
