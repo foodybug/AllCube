@@ -34,11 +34,12 @@ public class UI_Play : MonoBehaviour
     void Awake()
     {
         m_instance = this;
+        AutoAssignComponents();
     }
 
     void Start()
     {
-        // 미지정 컴포넌트 자동 복구 및 할당
+        // 미지정 컴포넌트 자동 복구 및 할당 (Awake에서 수행하나 안전 보완용 호출 유지)
         AutoAssignComponents();
 
         if (ui.textPlayInfo != null) ui.textPlayInfo.gameObject.SetActive(false);
@@ -214,6 +215,11 @@ public class UI_Play : MonoBehaviour
 
     public void SetPlayStats(int nCoin, int nJumps)
     {
+        if (ui.textJumps == null || ui.textPlayInfo == null)
+        {
+            AutoAssignComponents();
+        }
+
         m_nCurrentJumps = nJumps;
 
         string strLevel = "Level " + m_nLevelBuff.ToString();
@@ -709,56 +715,112 @@ public class UI_Play : MonoBehaviour
     private T FindChildByName<T>(string name) where T : Component
     {
         T[] comps = GetComponentsInChildren<T>(true);
-        if (comps == null) return null;
+        if (comps != null)
+        {
+            foreach (T comp in comps)
+            {
+                if (comp != null && comp.name != null)
+                {
+                    if (comp.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        return comp;
+                    }
+                }
+            }
+            foreach (T comp in comps)
+            {
+                if (comp != null && comp.name != null)
+                {
+                    if (comp.name.ToLower().Contains(name.ToLower()))
+                    {
+                        return comp;
+                    }
+                }
+            }
+        }
 
-        foreach (T comp in comps)
+        // Fallback: 씬 내의 로드된 모든 컴포넌트 검색 (자식 계층구조 외부에 배치된 경우 지원)
+        T[] allComps = Resources.FindObjectsOfTypeAll<T>();
+        if (allComps != null)
         {
-            if (comp != null && comp.name != null)
+            foreach (T comp in allComps)
             {
-                if (comp.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                if (comp != null && comp.gameObject != null && comp.gameObject.scene.isLoaded && comp.name != null)
                 {
-                    return comp;
+                    if (comp.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        return comp;
+                    }
+                }
+            }
+            foreach (T comp in allComps)
+            {
+                if (comp != null && comp.gameObject != null && comp.gameObject.scene.isLoaded && comp.name != null)
+                {
+                    if (comp.name.ToLower().Contains(name.ToLower()))
+                    {
+                        return comp;
+                    }
                 }
             }
         }
-        foreach (T comp in comps)
-        {
-            if (comp != null && comp.name != null)
-            {
-                if (comp.name.ToLower().Contains(name.ToLower()))
-                {
-                    return comp;
-                }
-            }
-        }
+
         return null;
     }
 
     private GameObject FindChildGameObjectByName(string name)
     {
         Transform[] trans = GetComponentsInChildren<Transform>(true);
-        if (trans == null) return null;
+        if (trans != null)
+        {
+            foreach (Transform t in trans)
+            {
+                if (t != null && t.name != null)
+                {
+                    if (t.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        return t.gameObject;
+                    }
+                }
+            }
+            foreach (Transform t in trans)
+            {
+                if (t != null && t.name != null)
+                {
+                    if (t.name.ToLower().Contains(name.ToLower()))
+                    {
+                        return t.gameObject;
+                    }
+                }
+            }
+        }
 
-        foreach (Transform t in trans)
+        // Fallback: 씬 내의 로드된 모든 트랜스폼 검색 (자식 계층구조 외부에 배치된 경우 지원)
+        Transform[] allTrans = Resources.FindObjectsOfTypeAll<Transform>();
+        if (allTrans != null)
         {
-            if (t != null && t.name != null)
+            foreach (Transform t in allTrans)
             {
-                if (t.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                if (t != null && t.gameObject != null && t.gameObject.scene.isLoaded && t.name != null)
                 {
-                    return t.gameObject;
+                    if (t.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        return t.gameObject;
+                    }
+                }
+            }
+            foreach (Transform t in allTrans)
+            {
+                if (t != null && t.gameObject != null && t.gameObject.scene.isLoaded && t.name != null)
+                {
+                    if (t.name.ToLower().Contains(name.ToLower()))
+                    {
+                        return t.gameObject;
+                    }
                 }
             }
         }
-        foreach (Transform t in trans)
-        {
-            if (t != null && t.name != null)
-            {
-                if (t.name.ToLower().Contains(name.ToLower()))
-                {
-                    return t.gameObject;
-                }
-            }
-        }
+
         return null;
     }
 }

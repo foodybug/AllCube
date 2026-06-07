@@ -78,6 +78,12 @@ public class PlayMain : MonoBehaviour
             CameraManager.Instance.SetTarget(m_goPlayer);
         }
 
+        Player playerComp = m_goPlayer.GetComponent<Player>();
+        if (playerComp != null)
+        {
+            playerComp.ResetJumpCount(10);
+        }
+
         Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();
         if (playerRb != null)
         {

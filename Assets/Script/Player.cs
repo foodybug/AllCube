@@ -162,6 +162,11 @@ public class Player : MonoBehaviour
         m_jumpCount += count;
     }
 
+    public void ResetJumpCount(int count = 10)
+    {
+        m_jumpCount = count;
+    }
+
     void OnTriggerEnter(Collider collider)
     {
         CubeBreak cubeBreak = collider.gameObject.GetComponent<CubeBreak>();
@@ -174,6 +179,16 @@ public class Player : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
+        // Floor_DeadZone 충돌 검출 (낙하사)
+        if (collision.gameObject.name == "Floor_DeadZone")
+        {
+            if (m_jumpCount <= 0)
+            {
+                MapManager.Instance.TriggerGameOver();
+            }
+            return;
+        }
+
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null && collision.contacts.Length > 0)
         {
