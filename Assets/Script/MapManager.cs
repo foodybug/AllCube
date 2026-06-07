@@ -73,7 +73,11 @@ public class MapManager : MonoBehaviour
 				// 3. Fall to death check (below the bottom floor plane after game starts)
 				if (PlayMain.Instance != null && PlayMain.Instance.IsGameStarted)
 				{
-					if (playerGo.transform.position.y < -1.4f)
+					Collider playerCol = playerGo.GetComponent<Collider>();
+					float boundsMinY = playerCol != null ? playerCol.bounds.min.y : playerGo.transform.position.y;
+					
+					Player playerComp = playerGo.GetComponent<Player>();
+					if (playerComp != null && playerComp.JumpCount <= 0 && boundsMinY < -1.4f)
 					{
 						TriggerGameOver();
 					}
@@ -366,12 +370,7 @@ public class MapManager : MonoBehaviour
 			m_listCube.Add(_CreateCube(4, y, eMapProp.eMapProp_Normal));
 
 			// Remove early bottom floor blocks to prevent player overlap at start, but keep starting platform at y == 0
-			if (y == 0)
-			{
-				eMapProp platformType = eMapProp.eMapProp_Normal;
-				m_listCube.Add(_CreateCube(1, y, platformType));
-				m_listCube.Add(_CreateCube(2, y, platformType));
-			}
+			// Remove early bottom floor blocks to prevent player overlap at start, but keep starting platform at y == 0
 		}
 		m_highestGeneratedY = targetY + 1;
 	}
