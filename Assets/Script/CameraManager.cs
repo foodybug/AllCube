@@ -11,6 +11,7 @@ public class CameraManager : MonoBehaviour
 
 	private Transform m_target;
 	public Transform Target { get { return m_target; } }
+	public bool isFollowing = true;
 	private float m_fFollowSpeed = 1.0f;
 	private float m_fMinZoomSpeed = 15.0f;
 	private float m_fMaxZoomSpeed = 40.0f;
@@ -34,7 +35,7 @@ public class CameraManager : MonoBehaviour
 
 	void FixedUpdate()
 	{
-		if( mainCamera == null || m_target == null || m_target.GetComponent<Rigidbody>() == null)
+		if( mainCamera == null || m_target == null || m_target.GetComponent<Rigidbody>() == null || !isFollowing)
 			return;
 
 		// update camera pos
@@ -58,6 +59,7 @@ public class CameraManager : MonoBehaviour
 
 		mainCamera.transform.position = new Vector3 (0.0f, 0.0f, -10.0f);
 		mainCamera.orthographicSize = m_fOrthographicSize_Min;
+		isFollowing = true;
 	}
 
 	public void SetTarget(GameObject go)

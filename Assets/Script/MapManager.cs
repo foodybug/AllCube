@@ -70,18 +70,7 @@ public class MapManager : MonoBehaviour
 				// 2. Clean up old blocks that are far below the player Y - 10
 				CleanupBlocksBelow(Mathf.FloorToInt(playerY) - 10);
 
-				// 3. Fall to death check (below the bottom floor plane after game starts)
-				if (PlayMain.Instance != null && PlayMain.Instance.IsGameStarted)
-				{
-					Collider playerCol = playerGo.GetComponent<Collider>();
-					float boundsMinY = playerCol != null ? playerCol.bounds.min.y : playerGo.transform.position.y;
-					
-					Player playerComp = playerGo.GetComponent<Player>();
-					if (playerComp != null && playerComp.JumpCount <= 0 && boundsMinY < -1.4f)
-					{
-						TriggerGameOver();
-					}
-				}
+				// 3. Fall to death check (Moved to OnTriggerEnter in Player.cs for a 1-second delay camera stop effect)
 
 				// 4. Dynamic warning / visual feedback on all active coins
 				Player player = playerGo.GetComponent<Player>();
@@ -142,6 +131,12 @@ public class MapManager : MonoBehaviour
 			if (rend != null)
 			{
 				rend.material.color = Color.gray;
+			}
+
+			Collider col = m_goFloor.GetComponent<Collider>();
+			if (col != null)
+			{
+				col.isTrigger = true;
 			}
 		}
 

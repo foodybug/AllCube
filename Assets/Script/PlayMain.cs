@@ -106,7 +106,7 @@ public class PlayMain : MonoBehaviour
             UI_Play.Instance.StartTime();
             UI_Play.Instance.PauseTime(true); // 대기 상태 동안 시간 흐름 일시정지
 
-            UI_Play.Instance.OpenHelpMsgBox_1(nLevel);
+            // UI_Play.Instance.OpenHelpMsgBox_1(nLevel);
         }
     }
 

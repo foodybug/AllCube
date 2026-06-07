@@ -16,6 +16,7 @@ public class Player : MonoBehaviour
     private float moveCubeForce = 5.0f;
     private float nextJumpDir = 1.0f;
     private float lastMoveX = 0.0f;
+    private bool m_bDead = false;
 
     [SerializeField] private int m_jumpCount = 10;
     public int JumpCount { get { return m_jumpCount; } }
@@ -165,10 +166,21 @@ public class Player : MonoBehaviour
     public void ResetJumpCount(int count = 10)
     {
         m_jumpCount = count;
+        m_bDead = false;
     }
 
     void OnTriggerEnter(Collider collider)
     {
+        if (collider.gameObject.name == "Floor_DeadZone")
+        {
+            if (!m_bDead)
+            {
+                m_bDead = true;
+                StartCoroutine(DeadZoneRoutine_CR());
+            }
+            return;
+        }
+
         CubeBreak cubeBreak = collider.gameObject.GetComponent<CubeBreak>();
 
         if (null == cubeBreak)
@@ -177,18 +189,20 @@ public class Player : MonoBehaviour
             MapManager.Instance.RemoveCube(collider.gameObject);
     }
 
-    void OnCollisionEnter(Collision collision)
+    private IEnumerator DeadZoneRoutine_CR()
     {
-        // Floor_DeadZone 충돌 검출 (낙하사)
-        if (collision.gameObject.name == "Floor_DeadZone")
+        if (CameraManager.Instance != null)
         {
-            if (m_jumpCount <= 0)
-            {
-                MapManager.Instance.TriggerGameOver();
-            }
-            return;
+            CameraManager.Instance.isFollowing = false;
         }
 
+        yield return new WaitForSeconds(1.0f);
+
+        MapManager.Instance.TriggerGameOver();
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null && collision.contacts.Length > 0)
         {
