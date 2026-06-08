@@ -38,6 +38,7 @@ public class Player : MonoBehaviour
         if (rb != null)
         {
             rb.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous; // 물리 관통(터널링) 방지
         }
     }
 
@@ -171,8 +172,11 @@ public class Player : MonoBehaviour
 
     void OnTriggerEnter(Collider collider)
     {
-        if (collider.gameObject.name == "Floor_DeadZone")
+        Debug.Log($"[Player Debug] OnTriggerEnter triggered with object: {collider.gameObject.name}, tag: {collider.gameObject.tag}");
+
+        if (collider.gameObject.name.Contains("Floor_DeadZone"))
         {
+            Debug.Log($"[Player Debug] DeadZone hit! m_bDead: {m_bDead}");
             if (!m_bDead)
             {
                 m_bDead = true;
@@ -191,6 +195,7 @@ public class Player : MonoBehaviour
 
     private IEnumerator DeadZoneRoutine_CR()
     {
+        Debug.Log("[Player Debug] Starting DeadZoneRoutine_CR. Disabling camera follow.");
         if (CameraManager.Instance != null)
         {
             CameraManager.Instance.isFollowing = false;
@@ -198,6 +203,7 @@ public class Player : MonoBehaviour
 
         yield return new WaitForSeconds(1.0f);
 
+        Debug.Log("[Player Debug] DeadZone delay finished. Triggering Game Over in MapManager.");
         MapManager.Instance.TriggerGameOver();
     }
 

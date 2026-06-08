@@ -124,7 +124,7 @@ public class MapManager : MonoBehaviour
 	{
 		if (m_goFloor == null)
 		{
-			m_goFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+			m_goFloor = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			m_goFloor.name = "Floor_DeadZone";
 			
 			Renderer rend = m_goFloor.GetComponent<Renderer>();
@@ -140,8 +140,8 @@ public class MapManager : MonoBehaviour
 			}
 		}
 
-		m_goFloor.transform.position = new Vector3(0f, -1.5f, 0f);
-		m_goFloor.transform.localScale = new Vector3(10f, 1f, 10f);
+		m_goFloor.transform.position = new Vector3(0f, -2.5f, 0f);
+		m_goFloor.transform.localScale = new Vector3(100f, 2f, 100f); // XZ 100, Y 두께 2
 	}
 
 	private eMapProp _GetMapProp(Color color)
@@ -315,6 +315,7 @@ public class MapManager : MonoBehaviour
 
 	private IEnumerator _LevelClear()
 	{
+		Debug.Log("[MapManager Debug] Starting _LevelClear sequence.");
 		if (MainManager.Instance != null)
 		{
 			MainManager.Instance.eCurState = eGameState.eGameState_Result;
@@ -332,6 +333,7 @@ public class MapManager : MonoBehaviour
 
 		if (MainManager.Instance != null)
 		{
+			Debug.Log("[MapManager Debug] Transitioning to Result scene.");
 			MainManager.Instance.TransitionToScene("Result");
 		}
 		else
@@ -346,6 +348,7 @@ public class MapManager : MonoBehaviour
 
 	public void TriggerGameOver()
 	{
+		Debug.Log($"[MapManager Debug] TriggerGameOver called. MainManager Instance: {(MainManager.Instance != null ? "Not Null" : "Null")}, CurState: {(MainManager.Instance != null ? MainManager.Instance.eCurState.ToString() : "N/A")}");
 		if (MainManager.Instance != null && MainManager.Instance.eCurState == eGameState.eGameState_Play)
 		{
 			StartCoroutine(_LevelClear());
