@@ -40,12 +40,15 @@ public class MainManager : MonoBehaviour
     public int nCurLevel = 1;
     public int nSaveLevel = 1;
     public int nSoundEnable = 1;
+    public int[] nBestHeight;
 
     [Header("Static Match Data Backups")]
     public static int nCurLevelStatic = 1;
     public static int lastTotalCoins = 0;
     public static int lastGameTime = 0;
     public static UI_Play.eLevelClearType lastClearType = UI_Play.eLevelClearType.eLevelClearType_None;
+    public static int lastMaxHeight = 0;
+    public static int lastBestHeight = 0;
     public static bool StartInLevelSelect = false;
 
     public bool IsTransitioning
@@ -238,6 +241,13 @@ public class MainManager : MonoBehaviour
         for (int i = 0; i < nLevelCount; i++)
             nClearType[i] = 0;
 
+        if (nBestHeight == null || nBestHeight.Length < nLevelCount)
+        {
+            nBestHeight = new int[nLevelCount];
+        }
+        for (int i = 0; i < nLevelCount; i++)
+            nBestHeight[i] = 0;
+
         string[] res = System.IO.Directory.GetFiles(Application.persistentDataPath, "info.inf");
 
         if (res.Length > 0)
@@ -248,7 +258,8 @@ public class MainManager : MonoBehaviour
                 {
                     if (null != fs)
                     {
-                        using (System.IO.BinaryReader br = new System.IO.BinaryReader(fs))
+                        using (System.IO.FileStream readerFs = fs)
+                        using (System.IO.BinaryReader br = new System.IO.BinaryReader(readerFs))
                         {
                             nSaveLevel = br.ReadInt32();
                             nSoundEnable = br.ReadInt32();
@@ -264,6 +275,23 @@ public class MainManager : MonoBehaviour
                                     nClearType[i] = br.ReadInt32();
                                 else
                                     br.ReadInt32();
+                            }
+
+                            // 로드된 파일의 데이터 스트림 끝에 도달했는지 확인하고 nBestHeight 로드
+                            if (readerFs.Position < readerFs.Length)
+                            {
+                                int nBestHeightCount = br.ReadInt32();
+                                if (nBestHeight.Length < nBestHeightCount)
+                                {
+                                    nBestHeight = new int[nBestHeightCount];
+                                }
+                                for (int i = 0; i < nBestHeightCount; i++)
+                                {
+                                    if (i < nBestHeight.Length)
+                                        nBestHeight[i] = br.ReadInt32();
+                                    else
+                                        br.ReadInt32();
+                                }
                             }
                         }
                     }
@@ -307,6 +335,16 @@ public class MainManager : MonoBehaviour
                     {
                         if (i < nClearType.Length)
                             bw.Write(nClearType[i]);
+                        else
+                            bw.Write(0);
+                    }
+
+                    // BestHeight 저장
+                    bw.Write(nLevelCount);
+                    for (int i = 0; i < nLevelCount; i++)
+                    {
+                        if (i < nBestHeight.Length)
+                            bw.Write(nBestHeight[i]);
                         else
                             bw.Write(0);
                     }

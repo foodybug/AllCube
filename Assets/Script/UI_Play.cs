@@ -30,6 +30,8 @@ public class UI_Play : MonoBehaviour
     public PlayUIElements ui = new PlayUIElements();
 
     private int m_nCurrentJumps = 10;
+    private int m_nMaxHeightThisRun = 0;
+    public int MaxHeightThisRun { get { return m_nMaxHeightThisRun; } }
 
     void Awake()
     {
@@ -199,6 +201,7 @@ public class UI_Play : MonoBehaviour
             ui.textPlayInfo.gameObject.SetActive(true);
 
         m_nLevelBuff = nLevel;
+        m_nMaxHeightThisRun = 0;
 
         SetPlayStats(nCoin, nJumps);
     }
@@ -222,12 +225,40 @@ public class UI_Play : MonoBehaviour
 
         m_nCurrentJumps = nJumps;
 
+        // 최대로 올라간 높이 계산 (1 unit = 1m)
+        float playerY = 0f;
+        if (CameraManager.Instance != null && CameraManager.Instance.Target != null)
+        {
+            playerY = CameraManager.Instance.Target.position.y;
+        }
+        int currentHeight = Mathf.Max(0, Mathf.FloorToInt(playerY));
+        if (currentHeight > m_nMaxHeightThisRun)
+        {
+            m_nMaxHeightThisRun = currentHeight;
+            int levelIdx = m_nLevelBuff - 1;
+            if (MainManager.Instance != null && MainManager.Instance.nBestHeight != null && levelIdx >= 0 && levelIdx < MainManager.Instance.nBestHeight.Length)
+            {
+                if (m_nMaxHeightThisRun > MainManager.Instance.nBestHeight[levelIdx])
+                {
+                    MainManager.Instance.nBestHeight[levelIdx] = m_nMaxHeightThisRun;
+                }
+            }
+        }
+
+        int allTimeBest = 0;
+        int displayLevelIdx = m_nLevelBuff - 1;
+        if (MainManager.Instance != null && MainManager.Instance.nBestHeight != null && displayLevelIdx >= 0 && displayLevelIdx < MainManager.Instance.nBestHeight.Length)
+        {
+            allTimeBest = MainManager.Instance.nBestHeight[displayLevelIdx];
+        }
+
         string strLevel = "Level " + m_nLevelBuff.ToString();
         string strJewel = string.Format("Jewel {0:n0}", nCoin);
+        string strHeight = string.Format("Height {0}m (Best {1}m)", m_nMaxHeightThisRun, allTimeBest);
 
         if (ui.textJumps != null)
         {
-            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel;
+            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight;
             ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
             if (false == ui.textJumps.gameObject.activeInHierarchy)
             {
@@ -237,7 +268,7 @@ public class UI_Play : MonoBehaviour
         else
         {
             string strJumps = string.Format("Jumps {0:n0}", nJumps);
-            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strJumps;
+            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight + "\n" + strJumps;
         }
     }
 
@@ -579,7 +610,7 @@ public class UI_Play : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}", nMin) + string.Format(":{0:D2}", nSec);
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
             }
         }
         else
@@ -601,7 +632,7 @@ public class UI_Play : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}", nMin) + string.Format(":{0:D2}", nSec);
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
             }
 
             if (ui.texResultIcon != null)

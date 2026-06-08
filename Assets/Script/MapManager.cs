@@ -329,6 +329,15 @@ public class MapManager : MonoBehaviour
 		{
 			MainManager.lastGameTime = UI_Play.Instance.nGameTime;
 			MainManager.lastClearType = UI_Play.Instance.eClearType;
+			MainManager.lastMaxHeight = UI_Play.Instance.MaxHeightThisRun;
+
+			int allTimeBest = 0;
+			int levelIdx = MainManager.nCurLevelStatic - 1;
+			if (MainManager.Instance != null && MainManager.Instance.nBestHeight != null && levelIdx >= 0 && levelIdx < MainManager.Instance.nBestHeight.Length)
+			{
+				allTimeBest = MainManager.Instance.nBestHeight[levelIdx];
+			}
+			MainManager.lastBestHeight = allTimeBest;
 		}
 
 		if (MainManager.Instance != null)
