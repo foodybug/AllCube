@@ -364,8 +364,19 @@ public class MapManager : MonoBehaviour
 			m_listCube.Add(_CreateCube(-4, y, eMapProp.eMapProp_Normal));
 			m_listCube.Add(_CreateCube(4, y, eMapProp.eMapProp_Normal));
 
-			// Remove early bottom floor blocks to prevent player overlap at start, but keep starting platform at y == 0
-			// Remove early bottom floor blocks to prevent player overlap at start, but keep starting platform at y == 0
+			// 보석(Coin) 배치 (y >= 3 이고 3의 배수 행마다 좌우 교대로 공중에 배치)
+			if (y >= 3 && y % 3 == 0)
+			{
+				bool isLeft = (y / 3) % 2 == 1;
+				if (isLeft)
+				{
+					m_listCoin.Add(_CreateCoin(-2, y));
+				}
+				else
+				{
+					m_listCoin.Add(_CreateCoin(2, y));
+				}
+			}
 		}
 		m_highestGeneratedY = targetY + 1;
 	}
