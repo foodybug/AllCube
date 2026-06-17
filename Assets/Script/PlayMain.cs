@@ -72,6 +72,11 @@ public class PlayMain : MonoBehaviour
             MainManager.Instance.nCurLevel = nLevel;
         }
 
+        if (MapManager.Instance != null)
+        {
+            MapManager.Instance.ApplyLevelConfig(nLevel);
+        }
+
         if (null == m_goPlayer)
         {
             m_goPlayer = GameObject.Instantiate(goPlayerSrc) as GameObject;
@@ -81,7 +86,7 @@ public class PlayMain : MonoBehaviour
         Player playerComp = m_goPlayer.GetComponent<Player>();
         if (playerComp != null)
         {
-            playerComp.ResetJumpCount(10);
+            playerComp.ResetJumpCount(MapManager.Instance != null ? MapManager.Instance.InitialJumps : 10);
         }
 
         Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();

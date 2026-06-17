@@ -21,6 +21,8 @@ public class UI_Play : MonoBehaviour
     private float m_fStartTime = 0.0f;
     private float m_fPauseTime = 0.0f;
     private bool m_bHelpMsgBoxNext = false;
+    private float m_comboPulseTimer = 0f;
+    private int m_lastDisplayCombo = 0;
 
     public bool bPauseTime { get { return m_bPauseTime; } }
 
@@ -45,8 +47,12 @@ public class UI_Play : MonoBehaviour
         AutoAssignComponents();
 
         if (ui.textPlayInfo != null) ui.textPlayInfo.gameObject.SetActive(false);
+        if (ui.textHeight != null) ui.textHeight.gameObject.SetActive(false);
         if (ui.textTime != null) ui.textTime.gameObject.SetActive(false);
         if (ui.texTimeIcon != null) ui.texTimeIcon.gameObject.SetActive(false);
+        if (ui.textCombo != null) ui.textCombo.gameObject.SetActive(false);
+        m_lastDisplayCombo = 0;
+        m_comboPulseTimer = 0f;
         if (ui.textSelectLevel != null) ui.textSelectLevel.gameObject.SetActive(false);
         if (ui.texNextBtnBg != null) ui.texNextBtnBg.gameObject.SetActive(false);
         if (ui.btnNext != null) ui.btnNext.gameObject.SetActive(false);
@@ -88,7 +94,17 @@ public class UI_Play : MonoBehaviour
 
     void Update()
     {
-        if (MainManager.Instance != null && eGameState.eGameState_Play == MainManager.Instance.eCurState)
+        bool isPlayState = false;
+        if (MainManager.Instance != null)
+        {
+            isPlayState = (eGameState.eGameState_Play == MainManager.Instance.eCurState);
+        }
+        else
+        {
+            isPlayState = (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Play");
+        }
+
+        if (isPlayState)
         {
             if (ui.goHelpMsgBox != null && true == ui.goHelpMsgBox.activeInHierarchy)
                 return;
@@ -118,6 +134,47 @@ public class UI_Play : MonoBehaviour
             {
                 ui.textJumps.transform.localScale = Vector3.one;
                 ui.textJumps.color = Color.white;
+            }
+        }
+
+        // Combo text pulse & color cycle animation
+        if (m_comboPulseTimer > 0f && ui.textCombo != null)
+        {
+            m_comboPulseTimer -= Time.deltaTime;
+            float scale = 1.0f + Mathf.Max(0f, m_comboPulseTimer) * 1.5f; // 1.0 ~ 1.45배 펄스
+            ui.textCombo.transform.localScale = new Vector3(scale, scale, 1f);
+            
+            // 색상 변화 (금색과 빨간색 번갈아)
+            ui.textCombo.color = Color.Lerp(Color.yellow, Color.red, Mathf.PingPong(Time.time * 10f, 1f));
+        }
+        else if (ui.textCombo != null)
+        {
+            ui.textCombo.transform.localScale = Vector3.one;
+            ui.textCombo.color = Color.yellow;
+        }
+
+        // Height UI Best record breaking pulse & color shift effect
+        int levelIdx = m_nLevelBuff - 1;
+        int bestHeight = 0;
+        if (MainManager.Instance != null && MainManager.Instance.nBestHeight != null && levelIdx >= 0 && levelIdx < MainManager.Instance.nBestHeight.Length)
+        {
+            bestHeight = MainManager.Instance.nBestHeight[levelIdx];
+        }
+
+        bool isBreakingRecord = (m_nMaxHeightThisRun == bestHeight && bestHeight > 0);
+
+        if (ui.textHeight != null && ui.textHeight.gameObject.activeInHierarchy)
+        {
+            if (isBreakingRecord)
+            {
+                float pulse = 1.0f + Mathf.Abs(Mathf.Sin(Time.realtimeSinceStartup * 6f)) * 0.15f;
+                ui.textHeight.transform.localScale = new Vector3(pulse, pulse, 1f);
+                ui.textHeight.color = Color.yellow;
+            }
+            else
+            {
+                ui.textHeight.transform.localScale = Vector3.one;
+                ui.textHeight.color = Color.white;
             }
         }
 
@@ -199,9 +256,15 @@ public class UI_Play : MonoBehaviour
     {
         if (ui.textPlayInfo != null && false == ui.textPlayInfo.gameObject.activeInHierarchy)
             ui.textPlayInfo.gameObject.SetActive(true);
+        if (ui.textHeight != null && false == ui.textHeight.gameObject.activeInHierarchy)
+            ui.textHeight.gameObject.SetActive(true);
+        if (ui.textCombo != null)
+            ui.textCombo.gameObject.SetActive(false);
 
         m_nLevelBuff = nLevel;
         m_nMaxHeightThisRun = 0;
+        m_lastDisplayCombo = 0;
+        m_comboPulseTimer = 0f;
 
         SetPlayStats(nCoin, nJumps);
     }
@@ -222,6 +285,10 @@ public class UI_Play : MonoBehaviour
         {
             AutoAssignComponents();
         }
+
+        if (ui.textPlayInfo != null) ui.textPlayInfo.verticalOverflow = VerticalWrapMode.Overflow;
+        if (ui.textHeight != null) ui.textHeight.verticalOverflow = VerticalWrapMode.Overflow;
+        if (ui.textJumps != null) ui.textJumps.verticalOverflow = VerticalWrapMode.Overflow;
 
         m_nCurrentJumps = nJumps;
 
@@ -254,21 +321,89 @@ public class UI_Play : MonoBehaviour
 
         string strLevel = "Level " + m_nLevelBuff.ToString();
         string strJewel = string.Format("Jewel {0:n0}", nCoin);
-        string strHeight = string.Format("Height {0}m (Best {1}m)", m_nMaxHeightThisRun, allTimeBest);
+        string strHeight = string.Format("Height {0}m (Best {1}m)", currentHeight, allTimeBest);
 
-        if (ui.textJumps != null)
+        if (ui.textHeight != null)
         {
-            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight;
-            ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
-            if (false == ui.textJumps.gameObject.activeInHierarchy)
+            ui.textHeight.text = strHeight;
+            if (false == ui.textHeight.gameObject.activeInHierarchy)
             {
-                ui.textJumps.gameObject.SetActive(true);
+                ui.textHeight.gameObject.SetActive(true);
+            }
+
+            if (ui.textJumps != null)
+            {
+                if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel;
+                ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
+                if (false == ui.textJumps.gameObject.activeInHierarchy)
+                {
+                    ui.textJumps.gameObject.SetActive(true);
+                }
+            }
+            else
+            {
+                string strJumps = string.Format("Jumps {0:n0}", nJumps);
+                if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strJumps;
             }
         }
         else
         {
-            string strJumps = string.Format("Jumps {0:n0}", nJumps);
-            if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight + "\n" + strJumps;
+            if (ui.textJumps != null)
+            {
+                if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight;
+                ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
+                if (false == ui.textJumps.gameObject.activeInHierarchy)
+                {
+                    ui.textJumps.gameObject.SetActive(true);
+                }
+            }
+            else
+            {
+                string strJumps = string.Format("Jumps {0:n0}", nJumps);
+                if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight + "\n" + strJumps;
+            }
+        }
+    }
+
+    public void UpdateCombo(int comboCount)
+    {
+        if (ui.textCombo == null)
+        {
+            AutoAssignComponents();
+        }
+
+        if (ui.textCombo != null)
+        {
+            if (comboCount > 0)
+            {
+                ui.textCombo.text = $"COMBO x{comboCount}";
+                if (!ui.textCombo.gameObject.activeInHierarchy)
+                {
+                    ui.textCombo.gameObject.SetActive(true);
+                }
+                
+                if (comboCount > m_lastDisplayCombo)
+                {
+                    m_comboPulseTimer = 0.3f; // 0.3초 동안 펄스 효과 기동
+                    
+                    if (comboCount >= 3 && comboCount % 3 == 0)
+                    {
+                        if (AudioManager.Instance != null)
+                        {
+                            AudioManager.Instance.Play("Sound/coin_eff", 0.4f, 1.2f);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ui.textCombo.text = "";
+                if (ui.textCombo.gameObject.activeInHierarchy)
+                {
+                    ui.textCombo.gameObject.SetActive(false);
+                }
+            }
+            m_lastDisplayCombo = comboCount;
         }
     }
 
@@ -302,8 +437,10 @@ public class UI_Play : MonoBehaviour
         }
         else
         {
-            if (ui != null && 
-                (ui.goHelpMsgBox == null || false == ui.goHelpMsgBox.activeInHierarchy) && 
+            if (ui != null &&
+
+                (ui.goHelpMsgBox == null || false == ui.goHelpMsgBox.activeInHierarchy) &&
+
                 (ui.goMsgBox == null || false == ui.goMsgBox.activeInHierarchy))
             {
                 if (m_bPauseTime != bPause)
@@ -594,6 +731,8 @@ public class UI_Play : MonoBehaviour
         if (ui.texMsgBoxBg != null && false == ui.texMsgBoxBg.gameObject.activeInHierarchy && ui.texNextBtnBg != null)
             ui.texNextBtnBg.gameObject.SetActive(true);
 
+        if (ui.textResultTime != null) ui.textResultTime.verticalOverflow = VerticalWrapMode.Overflow;
+
         if (eLevelClearType.eLevelClearType_None == MainManager.lastClearType)
         {
             AudioManager.Instance.Play("Sound/fail", 0.3f);
@@ -610,7 +749,12 @@ public class UI_Play : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
+                string bestSuffix = "";
+                if (MainManager.lastMaxHeight >= MainManager.lastBestHeight && MainManager.lastMaxHeight > 0)
+                {
+                    bestSuffix = " <color=yellow>[NEW BEST!]</color>";
+                }
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m{4}", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, bestSuffix);
             }
         }
         else
@@ -632,7 +776,12 @@ public class UI_Play : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
+                string bestSuffix = "";
+                if (MainManager.lastMaxHeight >= MainManager.lastBestHeight && MainManager.lastMaxHeight > 0)
+                {
+                    bestSuffix = " <color=yellow>[NEW BEST!]</color>";
+                }
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m{4}", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, bestSuffix);
             }
 
             if (ui.texResultIcon != null)
@@ -741,6 +890,30 @@ public class UI_Play : MonoBehaviour
 
         if (ui.texTimeIcon == null) ui.texTimeIcon = FindChildByName<RawImage>("texTimeIcon");
         if (ui.textJumps == null) ui.textJumps = FindChildByName<Text>("textJumps");
+        if (ui.textHeight == null) ui.textHeight = FindChildByName<Text>("textHeight");
+        
+        if (ui.textCombo == null)
+        {
+            ui.textCombo = FindChildByName<Text>("textCombo");
+            if (ui.textCombo == null && ui.textJumps != null)
+            {
+                GameObject goCombo = GameObject.Instantiate(ui.textJumps.gameObject, ui.textJumps.transform.parent);
+                goCombo.name = "textCombo";
+                ui.textCombo = goCombo.GetComponent<Text>();
+                
+                RectTransform rtJumps = ui.textJumps.GetComponent<RectTransform>();
+                RectTransform rtCombo = ui.textCombo.GetComponent<RectTransform>();
+                if (rtJumps != null && rtCombo != null)
+                {
+                    rtCombo.anchoredPosition = rtJumps.anchoredPosition + new Vector2(0f, -40f);
+                }
+                
+                ui.textCombo.color = Color.yellow;
+                ui.textCombo.text = "";
+                ui.textCombo.gameObject.SetActive(false);
+                Debug.Log("[UI_Play] textCombo dynamically created and positioned below textJumps.");
+            }
+        }
     }
 
     private T FindChildByName<T>(string name) where T : Component

@@ -71,10 +71,21 @@ public class GameMain : MonoBehaviour
             MainManager.Instance.nCurLevel = nLevel;
         }
 
+        if (MapManager.Instance != null)
+        {
+            MapManager.Instance.ApplyLevelConfig(nLevel);
+        }
+
         if (null == m_goPlayer)
         {
             m_goPlayer = GameObject.Instantiate(goPlayerSrc) as GameObject;
             CameraManager.Instance.SetTarget(m_goPlayer);
+        }
+
+        Player playerComp = m_goPlayer.GetComponent<Player>();
+        if (playerComp != null)
+        {
+            playerComp.ResetJumpCount(MapManager.Instance != null ? MapManager.Instance.InitialJumps : 10);
         }
 
         Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();
@@ -96,7 +107,7 @@ public class GameMain : MonoBehaviour
 
         if (UI_Play.Instance != null)
         {
-            UI_Play.Instance.SetPlayInfo(nLevel, 0, 10);
+            UI_Play.Instance.SetPlayInfo(nLevel, 0, MapManager.Instance != null ? MapManager.Instance.InitialJumps : 10);
             if (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goBtnRetry != null && false == UI_Play.Instance.ui.goBtnRetry.activeInHierarchy)
                 UI_Play.Instance.ui.goBtnRetry.SetActive(true);
             UI_Play.Instance.StartTime();

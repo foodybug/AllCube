@@ -58,7 +58,7 @@ public class AudioManager : MonoBehaviour
 			m_goBgm.GetComponent<AudioSource>().Stop();
 	}
 	
-	public void Play(string strPath, float fVolume = 1.0f)
+	public void Play(string strPath, float fVolume = 1.0f, float fPitch = 1.0f)
 	{
 		if( 0 == MainManager.Instance.nSoundEnable)
 			return;
@@ -74,9 +74,14 @@ public class AudioManager : MonoBehaviour
 		GameObject goAudioSource = Resources.Load( "Sound/AudioSource") as GameObject;
 		GameObject go = GameObject.Instantiate( goAudioSource, Vector3.zero, Quaternion.identity) as GameObject;
 		//go.transform.parent = this.gameObject.transform;
-		go.GetComponent<AudioSource>().clip = clip;
-		go.GetComponent<AudioSource>().volume = fVolume;
-		go.GetComponent<AudioSource>().Play();
+		AudioSource audioSource = go.GetComponent<AudioSource>();
+		if (audioSource != null)
+		{
+			audioSource.clip = clip;
+			audioSource.volume = fVolume;
+			audioSource.pitch = fPitch;
+			audioSource.Play();
+		}
 
 		MyAudioSource myAudioSource = go.GetComponentInChildren<MyAudioSource>();
 		if( null != myAudioSource)

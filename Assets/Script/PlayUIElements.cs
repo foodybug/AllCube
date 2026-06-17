@@ -30,4 +30,6 @@ public class PlayUIElements
     public RawImage texHelpMsgBoxBg;
     public RawImage texTimeIcon;
     public Text textJumps;
+    public Text textHeight;
+    public Text textCombo;
 }
