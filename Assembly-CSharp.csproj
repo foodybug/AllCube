@@ -94,6 +94,7 @@
     <Compile Include="Assets\Script\CubeJumpZero.cs" />
     <Compile Include="Assets\Script\CubeFlyingJumpZero.cs" />
     <Compile Include="Assets\Script\CubeFastObstacle.cs" />
+    <Compile Include="Assets\Script\CubeBlink.cs" />
     <Compile Include="Assets\Script\JumpIntervalTracker.cs" />
     <Compile Include="Assets\Script\InfiniteScrollObject.cs" />
   </ItemGroup>

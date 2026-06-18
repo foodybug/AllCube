@@ -12,7 +12,8 @@ public class MapManager : MonoBehaviour
         eMapProp_Break,
         eMapProp_MoveX,
         eMapProp_MoveY,
-        eMapProp_JumpZero
+        eMapProp_JumpZero,
+        eMapProp_Blink
     }
 
     static MapManager m_instance;
@@ -374,10 +375,12 @@ public class MapManager : MonoBehaviour
 
             case eMapProp.eMapProp_Normal:
                 go.GetComponent<Renderer>().material.mainTexture = texCube[(int)(Random.Range(1, 5))];
+                go.GetComponent<Renderer>().material.color = Color.white;
                 break;
 
             case eMapProp.eMapProp_Break:
                 go.GetComponent<Renderer>().material.mainTexture = texCube[0];
+                go.GetComponent<Renderer>().material.color = Color.white;
                 go.AddComponent<CubeBreak>();
                 CubeBreak cubeBreak = go.GetComponent<CubeBreak>();
                 cubeBreak.goCube = go;
@@ -385,6 +388,7 @@ public class MapManager : MonoBehaviour
 
             case eMapProp.eMapProp_MoveX:
                 go.GetComponent<Renderer>().material.mainTexture = texCube[5];
+                go.GetComponent<Renderer>().material.color = Color.white;
                 Rigidbody rbX = go.GetComponent<Rigidbody>();
                 if (rbX == null) rbX = go.AddComponent<Rigidbody>();
                 rbX.isKinematic = true;
@@ -396,6 +400,7 @@ public class MapManager : MonoBehaviour
 
             case eMapProp.eMapProp_MoveY:
                 go.GetComponent<Renderer>().material.mainTexture = texCube[5];
+                go.GetComponent<Renderer>().material.color = Color.white;
                 Rigidbody rbY = go.GetComponent<Rigidbody>();
                 if (rbY == null) rbY = go.AddComponent<Rigidbody>();
                 rbY.isKinematic = true;
@@ -409,13 +414,13 @@ public class MapManager : MonoBehaviour
                 Renderer rend = go.GetComponent<Renderer>();
                 if (rend != null)
                 {
-                    // 밋밋한 붉은색 단색 대신, texCube[0] (Break 텍스처 등)을 베이스 텍스처로 지정하고
-                    // Color.red로 틴트시킴으로써 텍스처 질감이 살아있는 붉은색 장애물을 표현합니다.
-                    if (texCube.Length > 0 && texCube[0] != null)
+                    // 0번(부서지는 블록) 대신 5번 텍스처를 장애물의 베이스로 사용하여 구분감을 줍니다.
+                    if (texCube.Length > 5 && texCube[5] != null)
                     {
-                        rend.material.mainTexture = texCube[0];
+                        rend.material.mainTexture = texCube[5];
                     }
-                    rend.material.color = Color.red;
+                    // 기둥(isBoundaryWall)은 흰색, 일반 공중 장애물은 빨간색으로 매핑
+                    rend.material.color = isBoundaryWall ? Color.white : Color.red;
                 }
                 Collider colZero = go.GetComponent<Collider>();
                 if (colZero != null)
@@ -436,6 +441,30 @@ public class MapManager : MonoBehaviour
                     CubeJumpZero comp = go.AddComponent<CubeJumpZero>();
                     comp.isBoundaryWall = isBoundaryWall;
                 }
+                break;
+
+            case eMapProp.eMapProp_Blink:
+                Renderer rendBlink = go.GetComponent<Renderer>();
+                if (rendBlink != null)
+                {
+                    // 0번 대신 5번 텍스처를 사용하고 청록색(Cyan) 틴트를 입혀 타이밍 장애물임을 명확하게 합니다.
+                    if (texCube.Length > 5 && texCube[5] != null)
+                    {
+                        rendBlink.material.mainTexture = texCube[5];
+                    }
+                    rendBlink.material.color = isBoundaryWall ? Color.white : new Color(0.3f, 0.8f, 1.0f, 1.0f); // 청록색
+                }
+                Collider colBlink = go.GetComponent<Collider>();
+                if (colBlink != null)
+                {
+                    colBlink.isTrigger = !isBoundaryWall;
+                }
+                Rigidbody rbBlink = go.GetComponent<Rigidbody>();
+                if (rbBlink != null)
+                {
+                    Util.MyDestroy(rbBlink);
+                }
+                go.AddComponent<CubeBlink>();
                 break;
         }
 
@@ -622,8 +651,16 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(_CreateCube(maxX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
 
             bool hasObstacle = false;
-            // 설정된 주기에 따라 기존의 고정형(공중) JumpZero 장애물 생성 (밟으면 파괴됨)
-            if (y >= 3 && staticInterval > 0 && y % staticInterval == 0)
+            // 고도 Y >= 8 이상에서 5블록 주기마다 Blink 장애물 생성 (위험과 안전 반복)
+            if (y >= 8 && y % 5 == 0)
+            {
+                hasObstacle = true;
+                int randomX = Random.Range(minX + 2, maxX + 1);
+                m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Blink, rowScrollWidth, false));
+            }
+
+            // 설정된 주기에 따라 기존의 고정형(공중) JumpZero 장애물 생성 (Blink와 겹치지 않게)
+            if (!hasObstacle && y >= 3 && staticInterval > 0 && y % staticInterval == 0)
             {
                 hasObstacle = true;
                 // 실제 월드 위치로 대칭 범위 내에서 랜덤 지정
