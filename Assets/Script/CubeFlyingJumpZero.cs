@@ -39,13 +39,11 @@ public class CubeFlyingJumpZero : MonoBehaviour
             if (player != null)
             {
                 Debug.Log($"[CubeFlyingJumpZero] Player hit Flying Red Block! Resetting jump count from {player.JumpCount} to 0.");
+                MainManager.lastDeathCause = "JumpZero";
                 player.ResetJumpCount(0);
+                player.KillPlayer();
 
-                // 점프 소실 경고 효과음 출력
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.Play("Sound/fail", 0.5f);
-                }
+
             }
         }
     }

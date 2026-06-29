@@ -92,11 +92,13 @@
     <Compile Include="Assets\Script\PlayMain.cs" />
     <Compile Include="Assets\Script\PlayUIElements.cs" />
     <Compile Include="Assets\Script\CubeJumpZero.cs" />
+    <Compile Include="Assets\Script\CubeDeadly.cs" />
     <Compile Include="Assets\Script\CubeFlyingJumpZero.cs" />
     <Compile Include="Assets\Script\CubeFastObstacle.cs" />
     <Compile Include="Assets\Script\CubeBlink.cs" />
     <Compile Include="Assets\Script\JumpIntervalTracker.cs" />
     <Compile Include="Assets\Script\InfiniteScrollObject.cs" />
+    <Compile Include="Assets\Script\ParallaxScroll.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Resources\Shaders\Unlit - Transparent Packed 3.shader" />

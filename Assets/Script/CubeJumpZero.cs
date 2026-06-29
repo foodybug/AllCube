@@ -31,13 +31,11 @@ public class CubeJumpZero : MonoBehaviour
             if (player != null)
             {
                 Debug.Log($"[CubeJumpZero] Player hit Red Block (Boundary: {isBoundaryWall})! Resetting jump count from {player.JumpCount} to 0.");
+                MainManager.lastDeathCause = "JumpZero";
                 player.ResetJumpCount(0);
+                player.KillPlayer();
 
-                // 점프 소실 경고 효과음 출력
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.Play("Sound/fail", 0.5f);
-                }
+
 
                 // 일반 공중 장애물인 경우에만 블록 파괴 효과 연출 및 제거
                 if (!isBoundaryWall)

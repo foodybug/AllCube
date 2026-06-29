@@ -28,6 +28,13 @@ public class MapManager : MonoBehaviour
 
     private List<GameObject> m_listCube = new List<GameObject>();
     private List<GameObject> m_listCoin = new List<GameObject>();
+    private List<InfiniteScrollObject> m_scrollObjects = new List<InfiniteScrollObject>();
+    private Coroutine m_cleanupCoroutine = null;
+    private Material[] m_sharedMaterials;
+    private GameObject m_goBackgroundContainer = null;
+    private List<ParallaxScroll> m_parallaxObjects = new List<ParallaxScroll>();
+    private Material m_farSkyMaterial = null;
+    private Material m_midCubeMaterial = null;
     private float m_fCubeSize = 0.0f;
     private float m_fLerp = 0.1f;
 
@@ -46,16 +53,20 @@ public class MapManager : MonoBehaviour
         public int staticObstacleInterval;
         public int flyingObstacleInterval;
         public int coinInterval;
+        public int coinSequence;
         public float minFlyingSpeed;
         public float maxFlyingSpeed;
         public int initialJumps;
     }
 
+    [Header("Web Leaderboard Settings")]
+    [SerializeField] private string m_rankingServerUrl = "http://localhost:3000/submit_score";
+
     [Header("Stage Generation Settings")]
     [SerializeField] private int m_minSpawnX = -30;
     [SerializeField] private int m_maxSpawnX = 30;
-    [SerializeField] private int m_generationAheadRange = 30;
-    [SerializeField] private int m_cleanupBehindRange = 25;
+    [SerializeField] private int m_generationAheadRange = 20;
+    [SerializeField] private int m_cleanupBehindRange = 18;
 
     public int MinSpawnX { get { return m_minSpawnX; } }
     public int MaxSpawnX { get { return m_maxSpawnX; } }
@@ -64,17 +75,18 @@ public class MapManager : MonoBehaviour
     [SerializeField]
     private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>()
     {
-        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, coinInterval = 3, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10 },
-        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, coinInterval = 4, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8 },
-        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, coinInterval = 5, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7 },
-        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, coinInterval = 6, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5 },
-        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, coinInterval = 7, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4 }
+        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10 },
+        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8 },
+        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7 },
+        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5 },
+        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4 }
     };
 
     // 현재 레벨에 적용되는 런타임 세팅 값들
     private int m_staticObstacleInterval = 5;
     private int m_flyingObstacleInterval = 8;
     private int m_coinInterval = 3;
+    private int m_coinSequence = 1;
     private float m_minFlyingSpeed = 6.0f;
     private float m_maxFlyingSpeed = 10.0f;
     private int m_initialJumps = 10;
@@ -83,13 +95,32 @@ public class MapManager : MonoBehaviour
 
     public DifficultyTier GetTierForHeight(int y)
     {
+        // 1. 순환 주기 계산 (마지막 티어의 minHeight와 그 이전 티어의 minHeight 차이 기준)
+        int cycleHeight = 100;
+        int count = m_difficultyTier.Count;
+        if (count > 1)
+        {
+            int lastDiff = m_difficultyTier[count - 1].minHeight - m_difficultyTier[count - 2].minHeight;
+            cycleHeight = m_difficultyTier[count - 1].minHeight + lastDiff;
+        }
+
+        // 음수 보정 및 순환 횟수/가상 높이 계산
+        int cycleCount = 0;
+        int virtualY = y;
+        if (y > 0 && cycleHeight > 0)
+        {
+            cycleCount = y / cycleHeight;
+            virtualY = y % cycleHeight;
+        }
+
+        // 2. 가상 높이(virtualY) 기준 기본 티어 조회
         DifficultyTier activeTier = new DifficultyTier();
         bool found = false;
         int maxMinHeight = -1;
 
         foreach (var tier in m_difficultyTier)
         {
-            if (y >= tier.minHeight && tier.minHeight > maxMinHeight)
+            if (virtualY >= tier.minHeight && tier.minHeight > maxMinHeight)
             {
                 activeTier = tier;
                 maxMinHeight = tier.minHeight;
@@ -97,23 +128,64 @@ public class MapManager : MonoBehaviour
             }
         }
 
-        if (found)
+        if (!found)
         {
-            return activeTier;
+            // Fallback (아무것도 찾지 못했을 때 기본 세팅값 반환)
+            activeTier.minHeight = 0;
+            activeTier.minSpawnX = -30;
+            activeTier.maxSpawnX = 30;
+            activeTier.staticObstacleInterval = 5;
+            activeTier.flyingObstacleInterval = 8;
+            activeTier.coinInterval = 3;
+            activeTier.coinSequence = 1;
+            activeTier.minFlyingSpeed = 6.0f;
+            activeTier.maxFlyingSpeed = 10.0f;
+            activeTier.initialJumps = 10;
         }
 
-        // Fallback (아무것도 찾지 못했을 때 기본 세팅값 반환)
-        DifficultyTier fallback = new DifficultyTier();
-        fallback.minHeight = 0;
-        fallback.minSpawnX = -30;
-        fallback.maxSpawnX = 30;
-        fallback.staticObstacleInterval = 5;
-        fallback.flyingObstacleInterval = 8;
-        fallback.coinInterval = 3;
-        fallback.minFlyingSpeed = 6.0f;
-        fallback.maxFlyingSpeed = 10.0f;
-        fallback.initialJumps = 10;
-        return fallback;
+        // 3. 순환 횟수(cycleCount)에 따른 보정치 적용 (패널티 강화, 어드밴티지 약화)
+        if (cycleCount > 0)
+        {
+            // 3-1. 패널티 강화
+            // staticObstacleInterval (장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
+            activeTier.staticObstacleInterval = Mathf.Max(2, activeTier.staticObstacleInterval - cycleCount);
+
+            // flyingObstacleInterval (비행 장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
+            activeTier.flyingObstacleInterval = Mathf.Max(2, activeTier.flyingObstacleInterval - cycleCount);
+
+            // 비행 장애물 속도 증가 (순환당 1.5f씩 상승)
+            activeTier.minFlyingSpeed += cycleCount * 1.5f;
+            activeTier.maxFlyingSpeed += cycleCount * 1.5f;
+
+            // 좌우 스폰 폭 좁히기 (순환당 좌우 1칸씩 좁힘 -> 기둥 간격 좁아져 위협 상승)
+            // 단, 너무 좁아져 진행이 불가하지 않도록 최소 가로폭 10 유지
+            int requestedMinX = activeTier.minSpawnX + cycleCount;
+            int requestedMaxX = activeTier.maxSpawnX - cycleCount;
+            if (requestedMaxX - requestedMinX >= 10)
+            {
+                activeTier.minSpawnX = requestedMinX;
+                activeTier.maxSpawnX = requestedMaxX;
+            }
+            else
+            {
+                // 중간점을 기준으로 최소 가로폭 10 유지
+                int center = (activeTier.minSpawnX + activeTier.maxSpawnX) / 2;
+                activeTier.minSpawnX = center - 5;
+                activeTier.maxSpawnX = center + 5;
+            }
+
+            // 3-2. 어드밴티지 약화
+            // coinInterval (코인 획득 간격 늘림 -> 덜 나옴, 최대 20)
+            activeTier.coinInterval = Mathf.Min(20, activeTier.coinInterval + cycleCount);
+
+            // coinSequence (코인 연속 스폰 갯수 줄임 -> 덜 나옴, 최소 1)
+            activeTier.coinSequence = Mathf.Max(1, activeTier.coinSequence - cycleCount);
+
+            // initialJumps (시작 점프 부여 개수 낮춤, 최소 3)
+            activeTier.initialJumps = Mathf.Max(3, activeTier.initialJumps - cycleCount);
+        }
+
+        return activeTier;
     }
 
     [Header("Infinite Scroll Settings")]
@@ -127,6 +199,23 @@ public class MapManager : MonoBehaviour
     void Awake()
     {
         m_instance = this;
+
+
+        Renderer srcRend = goCubeSrc != null ? goCubeSrc.GetComponent<Renderer>() : null;
+        if (srcRend != null && srcRend.sharedMaterial != null)
+        {
+            int texCount = texCube != null ? texCube.Length : 0;
+            int matCount = Mathf.Max(6, texCount);
+            m_sharedMaterials = new Material[matCount];
+            for (int i = 0; i < matCount; i++)
+            {
+                m_sharedMaterials[i] = new Material(srcRend.sharedMaterial);
+                if (texCube != null && i < texCube.Length && texCube[i] != null)
+                {
+                    m_sharedMaterials[i].mainTexture = texCube[i];
+                }
+            }
+        }
 
         // 런타임에 레벨 설정에 따라 동적으로 보정됨
 
@@ -179,6 +268,32 @@ public class MapManager : MonoBehaviour
             {
                 float playerY = playerGo.transform.position.y / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f);
 
+                // 배경색 RGB 무한 순환 연동 (높이 50m 당 한 사이클씩 더 자주 순환)
+                float hueCycleHeight = 50.0f;
+                float bgPlayerWorldY = playerGo.transform.position.y;
+                float bgHue = (bgPlayerWorldY / hueCycleHeight) % 1.0f;
+                if (bgHue < 0f) bgHue += 1.0f;
+
+                // 채도(Saturation)와 명도(Value)를 상향 조정하여 화사함을 더하고 노란색 등의 색감이 묻히지 않게 설계
+                float satFar = 0.55f + Mathf.Sin(bgPlayerWorldY * 0.04f) * 0.1f;
+                float valFar = 0.25f + Mathf.Cos(bgPlayerWorldY * 0.02f + Time.time * 0.08f) * 0.06f;
+
+                // 원경과 중경에 색조 오프셋(+0.15f)을 주어 서로 다른 색감이 공존하는 입체적 톤 연출
+                float midHue = (bgHue + 0.15f) % 1.0f;
+                float satMid = 0.6f + Mathf.Cos(bgPlayerWorldY * 0.05f) * 0.1f;
+                float valMid = 0.35f + Mathf.Sin(bgPlayerWorldY * 0.03f + Time.time * 0.1f) * 0.07f;
+
+                if (m_farSkyMaterial != null)
+                {
+                    m_farSkyMaterial.color = Color.HSVToRGB(bgHue, satFar, valFar);
+                }
+                if (m_midCubeMaterial != null)
+                {
+                    Color midColor = Color.HSVToRGB(midHue, satMid, valMid);
+                    midColor.a = 0.45f;
+                    m_midCubeMaterial.color = midColor;
+                }
+
                 // Update Floor_DeadZone position to follow player's Y position upwards
                 if (m_goFloor != null)
                 {
@@ -191,8 +306,8 @@ public class MapManager : MonoBehaviour
                     float playerWorldY = playerGo.transform.position.y;
                     float currentFloorY = m_goFloor.transform.position.y;
 
-                    // Place it sufficiently below the player, slightly inside the bottom edge of the camera so it remains visible
-                    float targetFloorWorldY = playerWorldY - cameraHeight + 2.0f;
+                    // Place it sufficiently below the player, outside the bottom edge of the camera so it remains invisible during normal play
+                    float targetFloorWorldY = playerWorldY - cameraHeight - 4.0f;
 
                     // Only move UP, never down
                     if (targetFloorWorldY > currentFloorY)
@@ -203,11 +318,25 @@ public class MapManager : MonoBehaviour
                         m_goFloor.transform.position = floorPos;
                     }
 
-                    // Ensure it is always visible
-                    Renderer floorRenderer = m_goFloor.GetComponent<Renderer>();
-                    if (floorRenderer != null && !floorRenderer.enabled)
+
+                }
+
+                float playerX = playerGo.transform.position.x;
+
+                // 무한 스크롤 오브젝트 일괄 갱신 (Update 인터롭 오버헤드 최적화)
+                m_scrollObjects.RemoveAll(item => item == null);
+                for (int i = 0; i < m_scrollObjects.Count; i++)
+                {
+                    m_scrollObjects[i].UpdateScroll(playerX);
+                }
+
+                // Parallax 배경 오브젝트 일괄 갱신
+                int parallaxCount = m_parallaxObjects.Count;
+                for (int i = 0; i < parallaxCount; i++)
+                {
+                    if (m_parallaxObjects[i] != null)
                     {
-                        floorRenderer.enabled = true;
+                        m_parallaxObjects[i].UpdateParallax();
                     }
                 }
 
@@ -217,9 +346,6 @@ public class MapManager : MonoBehaviour
                 {
                     GenerateRowsUpTo(targetY);
                 }
-
-                // 2. Clean up old blocks that are far below the player Y - m_cleanupBehindRange
-                CleanupBlocksBelow(Mathf.FloorToInt(playerY) - m_cleanupBehindRange);
 
                 // 3. Fall to death check (Moved to OnTriggerEnter in Player.cs for a 1-second delay camera stop effect)
 
@@ -247,11 +373,7 @@ public class MapManager : MonoBehaviour
                             Quaternion targetRot = Quaternion.Euler(0, coin.transform.rotation.eulerAngles.y, targetZRotation);
                             coin.transform.rotation = Quaternion.Lerp(coin.transform.rotation, targetRot, Time.deltaTime * lerpSpeed);
 
-                            Renderer r = coin.GetComponentInChildren<Renderer>();
-                            if (r != null)
-                            {
-                                r.material.color = rainbowColor;
-                            }
+
                         }
                     }
                 }
@@ -269,6 +391,7 @@ public class MapManager : MonoBehaviour
         m_staticObstacleInterval = config.staticObstacleInterval;
         m_flyingObstacleInterval = config.flyingObstacleInterval;
         m_coinInterval = config.coinInterval;
+        m_coinSequence = config.coinSequence;
         m_minFlyingSpeed = config.minFlyingSpeed;
         m_maxFlyingSpeed = config.maxFlyingSpeed;
         m_initialJumps = config.initialJumps;
@@ -286,9 +409,16 @@ public class MapManager : MonoBehaviour
         m_nTotalCoinsCollected = 0;
 
         SpawnFloor();
+        CreateBackground();
 
         // Spawn starting platform and walls
         GenerateRowsUpTo(m_generationAheadRange);
+
+        if (m_cleanupCoroutine != null)
+        {
+            StopCoroutine(m_cleanupCoroutine);
+        }
+        m_cleanupCoroutine = StartCoroutine(CleanupRoutine_CR());
     }
 
     private void SpawnFloor()
@@ -302,7 +432,7 @@ public class MapManager : MonoBehaviour
             if (rend != null)
             {
                 rend.material.color = Color.gray;
-                rend.enabled = true; // Always visible
+                rend.enabled = false; // Invisible dead zone
             }
 
             Collider col = m_goFloor.GetComponent<Collider>();
@@ -315,7 +445,7 @@ public class MapManager : MonoBehaviour
         float initialFloorY = -10.0f;
         if (CameraManager.Instance != null && CameraManager.Instance.mainCamera != null)
         {
-            initialFloorY = -CameraManager.Instance.mainCamera.orthographicSize + 2.0f;
+            initialFloorY = -CameraManager.Instance.mainCamera.orthographicSize - 4.0f;
         }
 
         m_goFloor.transform.position = new Vector3(0f, initialFloorY, 0f);
@@ -352,6 +482,16 @@ public class MapManager : MonoBehaviour
         return false;
     }
 
+    private Material GetSharedMaterial(int index)
+    {
+        if (m_sharedMaterials == null || m_sharedMaterials.Length == 0) return null;
+        if (index >= 0 && index < m_sharedMaterials.Length && m_sharedMaterials[index] != null)
+        {
+            return m_sharedMaterials[index];
+        }
+        return m_sharedMaterials[0];
+    }
+
     private GameObject _CreateCube(int x, int y, eMapProp prop, float scrollWidth, bool isBoundaryWall = false, bool isFlying = false, float customWorldX = 0f)
     {
         Vector3 vPos = Vector3.zero;
@@ -374,21 +514,18 @@ public class MapManager : MonoBehaviour
             case eMapProp.eMapProp_Coin: break;
 
             case eMapProp.eMapProp_Normal:
-                go.GetComponent<Renderer>().material.mainTexture = texCube[(int)(Random.Range(1, 5))];
-                go.GetComponent<Renderer>().material.color = Color.white;
+                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(Random.Range(1, 5));
                 break;
 
             case eMapProp.eMapProp_Break:
-                go.GetComponent<Renderer>().material.mainTexture = texCube[0];
-                go.GetComponent<Renderer>().material.color = Color.white;
+                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(0);
                 go.AddComponent<CubeBreak>();
                 CubeBreak cubeBreak = go.GetComponent<CubeBreak>();
                 cubeBreak.goCube = go;
                 break;
 
             case eMapProp.eMapProp_MoveX:
-                go.GetComponent<Renderer>().material.mainTexture = texCube[5];
-                go.GetComponent<Renderer>().material.color = Color.white;
+                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(5);
                 Rigidbody rbX = go.GetComponent<Rigidbody>();
                 if (rbX == null) rbX = go.AddComponent<Rigidbody>();
                 rbX.isKinematic = true;
@@ -399,8 +536,7 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_MoveY:
-                go.GetComponent<Renderer>().material.mainTexture = texCube[5];
-                go.GetComponent<Renderer>().material.color = Color.white;
+                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(5);
                 Rigidbody rbY = go.GetComponent<Rigidbody>();
                 if (rbY == null) rbY = go.AddComponent<Rigidbody>();
                 rbY.isKinematic = true;
@@ -411,16 +547,10 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_JumpZero:
-                Renderer rend = go.GetComponent<Renderer>();
-                if (rend != null)
+                Renderer rendZero = go.GetComponent<Renderer>();
+                if (rendZero != null)
                 {
-                    // 0번(부서지는 블록) 대신 5번 텍스처를 장애물의 베이스로 사용하여 구분감을 줍니다.
-                    if (texCube.Length > 5 && texCube[5] != null)
-                    {
-                        rend.material.mainTexture = texCube[5];
-                    }
-                    // 기둥(isBoundaryWall)은 흰색, 일반 공중 장애물은 빨간색으로 매핑
-                    rend.material.color = isBoundaryWall ? Color.white : Color.red;
+                    rendZero.sharedMaterial = GetSharedMaterial(isBoundaryWall ? 8 : 6);
                 }
                 Collider colZero = go.GetComponent<Collider>();
                 if (colZero != null)
@@ -432,14 +562,18 @@ public class MapManager : MonoBehaviour
                 {
                     Util.MyDestroy(rbZero);
                 }
-                if (isFlying && !isBoundaryWall)
+                if (isBoundaryWall)
+                {
+                    go.AddComponent<CubeDeadly>();
+                }
+                else if (isFlying)
                 {
                     go.AddComponent<CubeFlyingJumpZero>();
                 }
                 else
                 {
                     CubeJumpZero comp = go.AddComponent<CubeJumpZero>();
-                    comp.isBoundaryWall = isBoundaryWall;
+                    comp.isBoundaryWall = false;
                 }
                 break;
 
@@ -447,12 +581,7 @@ public class MapManager : MonoBehaviour
                 Renderer rendBlink = go.GetComponent<Renderer>();
                 if (rendBlink != null)
                 {
-                    // 0번 대신 5번 텍스처를 사용하고 청록색(Cyan) 틴트를 입혀 타이밍 장애물임을 명확하게 합니다.
-                    if (texCube.Length > 5 && texCube[5] != null)
-                    {
-                        rendBlink.material.mainTexture = texCube[5];
-                    }
-                    rendBlink.material.color = isBoundaryWall ? Color.white : new Color(0.3f, 0.8f, 1.0f, 1.0f); // 청록색
+                    rendBlink.sharedMaterial = GetSharedMaterial(isBoundaryWall ? 8 : 7);
                 }
                 Collider colBlink = go.GetComponent<Collider>();
                 if (colBlink != null)
@@ -473,6 +602,7 @@ public class MapManager : MonoBehaviour
             InfiniteScrollObject scroll = go.AddComponent<InfiniteScrollObject>();
             Transform playerT = CameraManager.Instance != null ? CameraManager.Instance.Target : null;
             scroll.Init(vPos.x, scrollWidth, playerT);
+            m_scrollObjects.Add(scroll);
         }
 
         return go;
@@ -506,7 +636,10 @@ public class MapManager : MonoBehaviour
             InfiniteScrollObject scroll = go.AddComponent<InfiniteScrollObject>();
             Transform playerT = CameraManager.Instance != null ? CameraManager.Instance.Target : null;
             scroll.Init(vPos.x, scrollWidth, playerT);
+            m_scrollObjects.Add(scroll);
         }
+
+
 
         return go;
     }
@@ -525,11 +658,21 @@ public class MapManager : MonoBehaviour
 
         m_listCoin.Clear();
 
+        m_scrollObjects.Clear();
+
+        if (m_cleanupCoroutine != null)
+        {
+            StopCoroutine(m_cleanupCoroutine);
+            m_cleanupCoroutine = null;
+        }
+
         if (m_goFloor != null)
         {
             Util.MyDestroy(m_goFloor);
             m_goFloor = null;
         }
+
+        ClearBackground();
     }
 
     public void RemoveCoin(GameObject go)
@@ -540,6 +683,9 @@ public class MapManager : MonoBehaviour
         AudioManager.Instance.Play("Sound/coin_eff", 0.3f);
 
         m_listCoin.Remove(go);
+
+        InfiniteScrollObject scroll = go.GetComponent<InfiniteScrollObject>();
+        if (scroll != null) m_scrollObjects.Remove(scroll);
         Util.MyDestroy(go);
 
         m_nTotalCoinsCollected++;
@@ -570,7 +716,67 @@ public class MapManager : MonoBehaviour
 
         AudioManager.Instance.Play("Sound/cube_break");
 
+        InfiniteScrollObject scroll = go.GetComponent<InfiniteScrollObject>();
+        if (scroll != null) m_scrollObjects.Remove(scroll);
         Util.MyDestroy(go);
+    }
+
+    private IEnumerator SubmitScoreToWebserver_CR(int score)
+    {
+        MainManager.lastServerRank = -1;
+        MainManager.lastServerPercentage = -1.0;
+
+        string url = m_rankingServerUrl;
+        string json = string.Format("{{\"deviceId\":\"{0}\",\"height\":{1}}}", SystemInfo.deviceUniqueIdentifier, score);
+
+        using (UnityEngine.Networking.UnityWebRequest request = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+            request.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.timeout = 2; // 2초 타임아웃
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    string responseText = request.downloadHandler.text;
+                    Debug.Log("[MapManager WebServer] Submit Score Success: " + responseText);
+
+                    int rankIdx = responseText.IndexOf("\"rank\":");
+                    int pctIdx = responseText.IndexOf("\"topPercentage\":");
+
+                    if (rankIdx != -1 && pctIdx != -1)
+                    {
+                        string rankSub = responseText.Substring(rankIdx + 7);
+                        int rankComma = rankSub.IndexOf(",");
+                        if (rankComma != -1) rankSub = rankSub.Substring(0, rankComma);
+                        int rank = int.Parse(rankSub.Trim());
+
+                        string pctSub = responseText.Substring(pctIdx + 16);
+                        int pctComma = pctSub.IndexOf(",");
+                        if (pctComma != -1) pctSub = pctSub.Substring(0, pctComma);
+                        int pctEndBracket = pctSub.IndexOf("}");
+                        if (pctEndBracket != -1) pctSub = pctSub.Substring(0, pctEndBracket);
+                        double pct = double.Parse(pctSub.Trim());
+
+                        MainManager.lastServerRank = rank;
+                        MainManager.lastServerPercentage = pct;
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError("[MapManager WebServer] JSON parsing error: " + e.Message);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[MapManager WebServer] Score submit failed or server offline: " + request.error);
+            }
+        }
     }
 
     private IEnumerator _LevelClear()
@@ -588,7 +794,8 @@ public class MapManager : MonoBehaviour
         if (UI_Play.Instance != null)
         {
             MainManager.lastGameTime = UI_Play.Instance.nGameTime;
-            MainManager.lastClearType = UI_Play.Instance.eClearType;
+            // 사망하여 게임오버가 되었으므로 클리어 타입은 무조건 None(실패)으로 강제 설정합니다.
+            MainManager.lastClearType = UI_Play.eLevelClearType.eLevelClearType_None;
             MainManager.lastMaxHeight = UI_Play.Instance.MaxHeightThisRun;
 
             int allTimeBest = 0;
@@ -598,6 +805,9 @@ public class MapManager : MonoBehaviour
                 allTimeBest = MainManager.Instance.nBestHeight[levelIdx];
             }
             MainManager.lastBestHeight = allTimeBest;
+
+            // 랭킹 웹 서버로 점수 비동기 등록 요청 (완료 대기)
+            yield return StartCoroutine(SubmitScoreToWebserver_CR(MainManager.lastMaxHeight));
         }
 
         if (MainManager.Instance != null)
@@ -640,6 +850,7 @@ public class MapManager : MonoBehaviour
             int staticInterval = tier.staticObstacleInterval;
             int flyingInterval = tier.flyingObstacleInterval;
             int coinInt = tier.coinInterval;
+            int coinSeq = tier.coinSequence;
             float minFlySpeed = tier.minFlyingSpeed;
             float maxFlySpeed = tier.maxFlyingSpeed;
 
@@ -720,76 +931,290 @@ public class MapManager : MonoBehaviour
                 float finalSpeed = flyRight ? speedVal : -speedVal;
 
                 GameObject flyingFastCube = _CreateCube(0, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false, true, startWorldX);
-                
+
                 // _CreateCube에서 자동으로 생성되는 CubeFlyingJumpZero 제거 후 CubeFastObstacle 추가
+
                 CubeFlyingJumpZero tempComp = flyingFastCube.GetComponent<CubeFlyingJumpZero>();
                 if (tempComp != null)
                 {
                     Util.MyDestroy(tempComp);
                 }
-                
+
+
                 CubeFastObstacle fastObstComp = flyingFastCube.AddComponent<CubeFastObstacle>();
                 if (fastObstComp != null)
                 {
                     fastObstComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);
                 }
-                
+
                 // 시각적으로 구분되도록 주황색(오렌지색)으로 틴트
+
                 Renderer rendFast = flyingFastCube.GetComponent<Renderer>();
                 if (rendFast != null)
                 {
-                    rendFast.material.color = new Color(1.0f, 0.5f, 0.0f);
+                    rendFast.sharedMaterial = GetSharedMaterial(9);
                 }
 
                 m_listCube.Add(flyingFastCube);
             }
 
             // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰)
-            if (y >= 3 && coinInt > 0 && y % coinInt == 0 && !hasObstacle)
+            if (y >= 3 && !hasObstacle)
             {
-                int randomX = Random.Range(minX + 2, maxX + 1);
-                m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                if (coinInt > 0)
+                {
+                    if (y % coinInt < coinSeq)
+                    {
+                        int randomX = Random.Range(minX + 2, maxX + 1);
+                        m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                    }
+                }
+                else
+                {
+                    int spawnCount = 2 - coinInt; // 0일 때 2개, -1일 때 3개...
+                    List<int> availableX = new List<int>();
+                    for (int sx = minX + 2; sx <= maxX + 1; sx++)
+                    {
+                        availableX.Add(sx);
+                    }
+
+                    for (int i = 0; i < spawnCount && availableX.Count > 0; i++)
+                    {
+                        int randomIndex = Random.Range(0, availableX.Count);
+                        int randomX = availableX[randomIndex];
+                        availableX.RemoveAt(randomIndex);
+
+                        m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                    }
+                }
             }
         }
         m_highestGeneratedY = targetY + 1;
     }
 
-    private void CleanupBlocksBelow(int limitY)
+    private IEnumerator CleanupRoutine_CR()
     {
-        for (int i = m_listCube.Count - 1; i >= 0; i--)
+        int cubeIndex = 0;
+        int coinIndex = 0;
+        WaitForSeconds wait = new WaitForSeconds(0.1f);
+
+        while (true)
         {
-            GameObject go = m_listCube[i];
-            if (go != null)
+            if (MainManager.Instance == null || MainManager.Instance.eCurState != eGameState.eGameState_Play)
             {
-                int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
-                if (gridY < limitY)
+                yield return wait;
+                continue;
+            }
+
+            GameObject playerGo = CameraManager.Instance != null && CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
+            if (playerGo == null)
+            {
+                yield return wait;
+                continue;
+            }
+
+            float playerY = playerGo.transform.position.y / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f);
+            int limitY = Mathf.FloorToInt(playerY) - m_cleanupBehindRange;
+
+            // 1. 큐브 순차 검사 (0.1초당 최대 1개)
+            if (m_listCube.Count > 0)
+            {
+                if (cubeIndex >= m_listCube.Count)
                 {
-                    m_listCube.RemoveAt(i);
-                    Util.MyDestroy(go);
+                    cubeIndex = m_listCube.Count - 1;
+                }
+
+                GameObject go = m_listCube[cubeIndex];
+                if (go != null)
+                {
+                    int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
+                    if (gridY < limitY)
+                    {
+                        m_listCube.RemoveAt(cubeIndex);
+                        InfiniteScrollObject scroll = go.GetComponent<InfiniteScrollObject>();
+                        if (scroll != null) m_scrollObjects.Remove(scroll);
+                        Util.MyDestroy(go);
+                    }
+                    else
+                    {
+                        cubeIndex--;
+                    }
+                }
+                else
+                {
+                    m_listCube.RemoveAt(cubeIndex);
+                }
+
+                if (cubeIndex < 0)
+                {
+                    cubeIndex = m_listCube.Count - 1;
                 }
             }
-            else
+
+            // 2. 코인 순차 검사 (0.1초당 최대 1개)
+            if (m_listCoin.Count > 0)
             {
-                m_listCube.RemoveAt(i);
+                if (coinIndex >= m_listCoin.Count)
+                {
+                    coinIndex = m_listCoin.Count - 1;
+                }
+
+                GameObject go = m_listCoin[coinIndex];
+                if (go != null)
+                {
+                    int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
+                    if (gridY < limitY)
+                    {
+                        m_listCoin.RemoveAt(coinIndex);
+
+                        InfiniteScrollObject scroll = go.GetComponent<InfiniteScrollObject>();
+                        if (scroll != null) m_scrollObjects.Remove(scroll);
+                        Util.MyDestroy(go);
+                    }
+                    else
+                    {
+                        coinIndex--;
+                    }
+                }
+                else
+                {
+                    m_listCoin.RemoveAt(coinIndex);
+                }
+
+                if (coinIndex < 0)
+                {
+                    coinIndex = m_listCoin.Count - 1;
+                }
+            }
+
+            yield return wait;
+        }
+    }
+
+    private void CreateBackground()
+    {
+        ClearBackground();
+
+        m_goBackgroundContainer = new GameObject("BackgroundContainer");
+        m_goBackgroundContainer.transform.parent = this.transform;
+
+        Transform cameraT = CameraManager.Instance != null && CameraManager.Instance.mainCamera != null ? CameraManager.Instance.mainCamera.transform : null;
+        if (cameraT == null) return;
+
+        // Sprites/Default 셰이더를 사용하여 직교 카메라 배경 렌더링 시 투명도 및 드로우콜 배칭 완벽 지원
+        Shader bgShader = Shader.Find("Sprites/Default");
+        if (bgShader == null)
+        {
+            bgShader = Shader.Find("UI/Default");
+        }
+
+        if (bgShader != null)
+        {
+            m_farSkyMaterial = new Material(bgShader);
+            m_farSkyMaterial.color = new Color(0.04f, 0.04f, 0.12f, 1f); // 원경 짙은 남색
+            m_farSkyMaterial.enableInstancing = true; // GPU 인스턴싱 활성화
+
+            m_midCubeMaterial = new Material(bgShader);
+            m_midCubeMaterial.color = new Color(0.12f, 0.1f, 0.22f, 0.45f); // 중경 반투명 보라색 (알파 0.45)
+            m_midCubeMaterial.enableInstancing = true; // GPU 인스턴싱 활성화
+        }
+
+        // 1. 원경 Quad (Far Background Sky)
+        GameObject goFar = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        goFar.name = "Far_Background_Quad";
+        goFar.transform.parent = cameraT;
+        goFar.transform.localPosition = new Vector3(0f, 0f, 100f); // Z=100 (중경 큐브 가려짐 방지를 위해 원경을 뒤로 대폭 배치)
+        goFar.transform.localScale = new Vector3(600f, 600f, 1f); // 거리에 맞춘 크기 확대
+
+        Collider colFar = goFar.GetComponent<Collider>();
+        if (colFar != null) Util.MyDestroy(colFar);
+
+        Renderer rendFar = goFar.GetComponent<Renderer>();
+        if (rendFar != null && m_farSkyMaterial != null)
+        {
+            rendFar.sharedMaterial = m_farSkyMaterial;
+        }
+
+        // 2. 중경 거대 큐브군 (Mid Background Cubes)
+        int cols = 2; // 가로 2칸
+        int rows = 5; // 세로 5칸
+        int midCubeCount = cols * rows; // 총 10개로 축소하여 오버드로우 렉 극적 개선
+        float bgLoopHeight = 120f; // 세로 루프 주기
+
+        float totalWidth = m_scrollWidth * 1.2f;
+        float gridW = totalWidth / cols;
+        float gridH = bgLoopHeight / rows;
+
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                int index = r * cols + c;
+                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad); // 3D Cube 대신 2D Quad로 전환하여 프레임 대폭 상승
+                go.name = "Background_MidCube_" + index;
+                go.transform.parent = m_goBackgroundContainer.transform;
+
+                Collider col = go.GetComponent<Collider>();
+                if (col != null) Util.MyDestroy(col);
+
+                // 기존 스케일 대비 1.2배 추가 확대적용 (12f ~ 31f)
+                float scale = Random.Range(12f, 31f);
+                go.transform.localScale = Vector3.one * scale;
+
+                // 그리드 구역 안에서 약간의 랜덤 오프셋을 섞어 완전 겹침 방지 및 골고루 분포 유도
+                float gridCenterX = -totalWidth * 0.5f + (c + 0.5f) * gridW;
+                float gridCenterY = -30f + (r + 0.5f) * gridH;
+
+                float posX = gridCenterX + Random.Range(-gridW * 0.25f, gridW * 0.25f);
+                float posY = gridCenterY + Random.Range(-gridH * 0.25f, gridH * 0.25f);
+                // 스폰 월드 Z 범위를 15f ~ 35f로 앞으로 당겨 원경 쿼드보다 앞에 렌더링되게 확실히 보장
+                float posZ = Random.Range(15f, 35f);
+                go.transform.position = new Vector3(posX, posY, posZ);
+
+                Renderer rend = go.GetComponent<Renderer>();
+                if (rend != null && m_midCubeMaterial != null)
+                {
+                    rend.sharedMaterial = m_midCubeMaterial;
+                }
+
+                ParallaxScroll parallax = go.AddComponent<ParallaxScroll>();
+                parallax.Init(cameraT, 0.7f, 0.85f, m_scrollWidth, bgLoopHeight);
+                m_parallaxObjects.Add(parallax);
             }
         }
 
-        for (int i = m_listCoin.Count - 1; i >= 0; i--)
+
+    }
+
+    private void ClearBackground()
+    {
+        m_parallaxObjects.Clear();
+
+        if (m_goBackgroundContainer != null)
         {
-            GameObject go = m_listCoin[i];
-            if (go != null)
+            Util.MyDestroy(m_goBackgroundContainer);
+            m_goBackgroundContainer = null;
+        }
+
+        if (CameraManager.Instance != null && CameraManager.Instance.mainCamera != null)
+        {
+            Transform farBg = CameraManager.Instance.mainCamera.transform.Find("Far_Background_Quad");
+            if (farBg != null)
             {
-                int gridY = Mathf.RoundToInt((go.transform.position.y + m_fCubeSize) / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f));
-                if (gridY < limitY)
-                {
-                    m_listCoin.RemoveAt(i);
-                    Util.MyDestroy(go);
-                }
+                Util.MyDestroy(farBg.gameObject);
             }
-            else
-            {
-                m_listCoin.RemoveAt(i);
-            }
+        }
+
+        // 동적 생성된 공유 머티리얼 메모리 안전하게 제거
+        if (m_farSkyMaterial != null)
+        {
+            Util.MyDestroy(m_farSkyMaterial);
+            m_farSkyMaterial = null;
+        }
+        if (m_midCubeMaterial != null)
+        {
+            Util.MyDestroy(m_midCubeMaterial);
+            m_midCubeMaterial = null;
         }
     }
 }

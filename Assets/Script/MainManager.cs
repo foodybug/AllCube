@@ -49,6 +49,10 @@ public class MainManager : MonoBehaviour
     public static UI_Play.eLevelClearType lastClearType = UI_Play.eLevelClearType.eLevelClearType_None;
     public static int lastMaxHeight = 0;
     public static int lastBestHeight = 0;
+    public static int lastJumpCount = 0;
+    public static string lastDeathCause = "";
+    public static int lastServerRank = -1;
+    public static double lastServerPercentage = -1.0;
     public static bool StartInLevelSelect = false;
 
     public bool IsTransitioning
@@ -69,7 +73,6 @@ public class MainManager : MonoBehaviour
         }
         m_instance = this;
         DontDestroyOnLoad(gameObject);
-        Application.targetFrameRate = 60;
 
         // 씬 로드 완료 이벤트 구독
         SceneManager.sceneLoaded += OnSceneLoaded;

@@ -22,7 +22,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float m_maxComboPitchBonus = 1.0f;
     private float forceWait = 0;
     private float moveX = 0.0f;
-    private bool AllowAddForce { get { return forceWait < 0.0f; } }
+    private bool AllowAddForce { get { return forceWait < 0.0f && !m_bDead; } }
     private float moveCubeForce = 5.0f;
     private float nextJumpDir = 1.0f;
     private float lastMoveX = 0.0f;
@@ -203,6 +203,29 @@ public class Player : MonoBehaviour
         {
             JumpIntervalTracker.Instance.ResetTracker();
         }
+
+        if (m_renderer != null)
+        {
+            m_renderer.enabled = true;
+        }
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
+        if (m_rb != null)
+        {
+            m_rb.isKinematic = false;
+        }
+    }
+
+    public void KillPlayer()
+    {
+        if (!m_bDead)
+        {
+            m_bDead = true;
+            StartCoroutine(DeadZoneRoutine_CR());
+        }
     }
 
     void OnTriggerEnter(Collider collider)
@@ -212,6 +235,10 @@ public class Player : MonoBehaviour
             if (!m_bDead)
             {
                 m_bDead = true;
+                if (MainManager.lastDeathCause != "JumpZero")
+                {
+                    MainManager.lastDeathCause = "DeadZone";
+                }
                 StartCoroutine(DeadZoneRoutine_CR());
             }
             return;
@@ -241,9 +268,41 @@ public class Player : MonoBehaviour
 
     private IEnumerator DeadZoneRoutine_CR()
     {
+        Debug.Log($"[Player Debug] DeadZoneRoutine_CR! m_jumpCount: {m_jumpCount}");
+        MainManager.lastJumpCount = m_jumpCount;
+
         if (CameraManager.Instance != null)
         {
             CameraManager.Instance.isFollowing = false;
+        }
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.Play("Sound/cube_break");
+        }
+
+        if (MapManager.Instance != null && MapManager.Instance.goCubeEffSrc != null)
+        {
+            GameObject goEff = Instantiate(MapManager.Instance.goCubeEffSrc) as GameObject;
+            goEff.transform.position = transform.position;
+        }
+
+        if (m_renderer != null)
+        {
+            m_renderer.enabled = false;
+        }
+
+        if (m_rb != null)
+        {
+            m_rb.linearVelocity = Vector3.zero;
+            m_rb.angularVelocity = Vector3.zero;
+            m_rb.isKinematic = true;
+        }
+
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.enabled = false;
         }
 
         yield return new WaitForSeconds(1.0f);

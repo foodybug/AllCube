@@ -41,11 +41,7 @@ public class CubeFastObstacle : MonoBehaviour
                 Debug.Log($"[CubeFastObstacle] Player hit Fast Meteor Block! Resetting jump count from {player.JumpCount} to 0.");
                 player.ResetJumpCount(0);
 
-                // 점프 소실 경고 효과음 출력
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.Play("Sound/fail", 0.6f);
-                }
+
             }
         }
     }

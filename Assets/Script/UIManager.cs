@@ -88,6 +88,15 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
+        if (MainManager.Instance != null && MainManager.Instance.eCurState == eGameState.eGameState_Result)
+        {
+            if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
+            {
+                onBtnNext();
+            }
+            return;
+        }
+
         if (MainManager.Instance != null && eGameState.eGameState_Play == MainManager.Instance.eCurState)
         {
             if (ui.goHelpMsgBox != null && true == ui.goHelpMsgBox.activeInHierarchy)
@@ -596,7 +605,6 @@ public class UIManager : MonoBehaviour
 
         if ((int)eLevelClearType.eLevelClearType_None == (int)MainManager.lastClearType)
         {
-            AudioManager.Instance.Play("Sound/fail", 0.3f);
             if (ui.textNext != null) ui.textNext.text = "Retry";
             if (ui.texNext != null) ui.texNext.texture = Resources.Load("UI/retry_bg") as Texture;
 
@@ -610,7 +618,7 @@ public class UIManager : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m\n{4}", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, GetWorldRankString(MainManager.lastMaxHeight));
             }
         }
         else
@@ -632,7 +640,7 @@ public class UIManager : MonoBehaviour
                 ui.textResultTime.enabled = true;
                 int nMin = MainManager.lastGameTime / 60;
                 int nSec = MainManager.lastGameTime % 60;
-                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight);
+                ui.textResultTime.text = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m\n{4}", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, GetWorldRankString(MainManager.lastMaxHeight));
             }
 
             if (ui.texResultIcon != null)
@@ -853,5 +861,46 @@ public class UIManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    private string GetWorldRankString(int height)
+    {
+        if (height <= 0) return "Rank: -";
+
+        // 만약 서버에서 랭킹을 성공적으로 수신받은 경우 실제 서버 등수 표시
+        if (MainManager.lastServerRank > 0)
+        {
+            if (MainManager.lastServerRank == 1)
+            {
+                return string.Format("<color=yellow>Rank: 1st (Top {0:F2}% / Server)</color>", MainManager.lastServerPercentage);
+            }
+            else if (MainManager.lastServerPercentage < 0.1)
+            {
+                return string.Format("<color=yellow>Rank: {0:n0}th (Top {1:F4}% / Server)</color>", MainManager.lastServerRank, MainManager.lastServerPercentage);
+            }
+            else
+            {
+                return string.Format("Rank: {0:n0}th (Top {1:F2}% / Server)", MainManager.lastServerRank, MainManager.lastServerPercentage);
+            }
+        }
+
+        // 서버 연동 실패 시의 가상 등수 (Fallback)
+        long totalPlayers = 1542800;
+        double factor = System.Math.Max(0.00001, System.Math.Exp(-height * 0.05));
+        long rank = (long)System.Math.Max(1, System.Math.Round(totalPlayers * factor));
+        double topPercentage = (double)rank / totalPlayers * 100.0;
+
+        if (rank == 1)
+        {
+            return "<color=yellow>Rank: 1st (Top 0.0001%)</color>";
+        }
+        else if (topPercentage < 0.1)
+        {
+            return string.Format("<color=yellow>Rank: {0:n0}th (Top {1:F4}%)</color>", rank, topPercentage);
+        }
+        else
+        {
+            return string.Format("Rank: {0:n0}th (Top {1:F2}%)", rank, topPercentage);
+        }
     }
 }
