@@ -1,3 +1,4 @@
+#if UNITY_IOS
 using System;
 
 // This attribute is used on static functions and it allows Mono's Ahead of Time Compiler
@@ -6,3 +7,5 @@ public sealed class MonoPInvokeCallbackAttribute : Attribute
 {
     public MonoPInvokeCallbackAttribute(Type type) {}
 }
+#endif
+
