@@ -8,7 +8,7 @@ public class ResultMain : MonoBehaviour
     private bool m_bDestroyed = false;
 
     [Header("Web Leaderboard Settings")]
-    [SerializeField] private string m_rankingServerUrl = "http://localhost:3000/submit_score";
+    [SerializeField] private string m_rankingServerUrl = "https://all-cube-server.vercel.app/submit_score";
 
     [Header("UI View Reference")]
     [SerializeField] private UI_Result ui;
