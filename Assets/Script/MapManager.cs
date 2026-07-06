@@ -59,9 +59,6 @@ public class MapManager : MonoBehaviour
         public int initialJumps;
     }
 
-    [Header("Web Leaderboard Settings")]
-    [SerializeField] private string m_rankingServerUrl = "http://localhost:3000/submit_score";
-
     [Header("Stage Generation Settings")]
     [SerializeField] private int m_minSpawnX = -30;
     [SerializeField] private int m_maxSpawnX = 30;
@@ -721,64 +718,6 @@ public class MapManager : MonoBehaviour
         Util.MyDestroy(go);
     }
 
-    private IEnumerator SubmitScoreToWebserver_CR(int score)
-    {
-        MainManager.lastServerRank = -1;
-        MainManager.lastServerPercentage = -1.0;
-
-        string url = m_rankingServerUrl;
-        string json = string.Format("{{\"deviceId\":\"{0}\",\"height\":{1}}}", SystemInfo.deviceUniqueIdentifier, score);
-
-        using (UnityEngine.Networking.UnityWebRequest request = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
-        {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-            request.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 2; // 2초 타임아웃
-
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-            {
-                try
-                {
-                    string responseText = request.downloadHandler.text;
-                    Debug.Log("[MapManager WebServer] Submit Score Success: " + responseText);
-
-                    int rankIdx = responseText.IndexOf("\"rank\":");
-                    int pctIdx = responseText.IndexOf("\"topPercentage\":");
-
-                    if (rankIdx != -1 && pctIdx != -1)
-                    {
-                        string rankSub = responseText.Substring(rankIdx + 7);
-                        int rankComma = rankSub.IndexOf(",");
-                        if (rankComma != -1) rankSub = rankSub.Substring(0, rankComma);
-                        int rank = int.Parse(rankSub.Trim());
-
-                        string pctSub = responseText.Substring(pctIdx + 16);
-                        int pctComma = pctSub.IndexOf(",");
-                        if (pctComma != -1) pctSub = pctSub.Substring(0, pctComma);
-                        int pctEndBracket = pctSub.IndexOf("}");
-                        if (pctEndBracket != -1) pctSub = pctSub.Substring(0, pctEndBracket);
-                        double pct = double.Parse(pctSub.Trim());
-
-                        MainManager.lastServerRank = rank;
-                        MainManager.lastServerPercentage = pct;
-                    }
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError("[MapManager WebServer] JSON parsing error: " + e.Message);
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[MapManager WebServer] Score submit failed or server offline: " + request.error);
-            }
-        }
-    }
-
     private IEnumerator _LevelClear()
     {
         Debug.Log("[MapManager Debug] Starting _LevelClear sequence.");
@@ -805,9 +744,6 @@ public class MapManager : MonoBehaviour
                 allTimeBest = MainManager.Instance.nBestHeight[levelIdx];
             }
             MainManager.lastBestHeight = allTimeBest;
-
-            // 랭킹 웹 서버로 점수 비동기 등록 요청 (완료 대기)
-            yield return StartCoroutine(SubmitScoreToWebserver_CR(MainManager.lastMaxHeight));
         }
 
         if (MainManager.Instance != null)
@@ -1190,10 +1126,18 @@ public class MapManager : MonoBehaviour
     {
         m_parallaxObjects.Clear();
 
+        // 1. 기존 컨테이너 변수 즉시 파괴 (지연 파괴 중복 방지)
         if (m_goBackgroundContainer != null)
         {
-            Util.MyDestroy(m_goBackgroundContainer);
+            DestroyImmediate(m_goBackgroundContainer);
             m_goBackgroundContainer = null;
+        }
+
+        // 2. 부모 자식 트리 구조 하위의 BackgroundContainer 추가적 완벽 검색 소거
+        Transform childContainer = this.transform.Find("BackgroundContainer");
+        if (childContainer != null)
+        {
+            DestroyImmediate(childContainer.gameObject);
         }
 
         if (CameraManager.Instance != null && CameraManager.Instance.mainCamera != null)

@@ -112,10 +112,6 @@ public class MainManager : MonoBehaviour
         else if (scene.name == "Result")
         {
             eCurState = eGameState.eGameState_Result;
-            if (UI_Play.Instance != null)
-            {
-                UI_Play.Instance.SetupResultScreen();
-            }
         }
 
         if (StartWithFadeIn)
