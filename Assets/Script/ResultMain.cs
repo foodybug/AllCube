@@ -472,51 +472,6 @@ public class ResultMain : MonoBehaviour
             }
         }
 
-        // 3. [실제 플레이어와 100% 동일한 외형/점핑 궤적을 띄는 복제본들 소환 (총 5개 - Title 씬과 대칭)]
-        Texture playerTexOff = Resources.Load("Player/texPlayerOff") as Texture;
-        for (int i = 0; i < 5; i++)
-        {
-            GameObject pGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            pGo.name = "Result_Rhythmic_Player_" + i;
-            pGo.transform.parent = m_goBackgroundContainer.transform;
-
-            Collider col = pGo.GetComponent<Collider>();
-            if (col != null) col.isTrigger = true;
-
-            pGo.transform.localScale = Vector3.one * Random.Range(2.0f, 2.8f);
-
-            // [초기 스폰 가로 좌표 X - 중앙 로고 및 결과 UI 영역을 피해 좌우 날개로 완전 분산 지정]
-            float cameraX = cameraT.position.x;
-            bool spawnOnLeft = (Random.value > 0.5f);
-            float startX = spawnOnLeft
-                ? cameraX - Random.Range(3.8f, 6.8f)
-                : cameraX + Random.Range(3.8f, 6.8f);
-
-            float startY = cameraT.position.y - 12.0f - 6.0f - (i * 12.0f);
-            float posZ = Random.Range(6.0f, 8.5f); // 전면 밀착 레이어에 소환
-            pGo.transform.position = new Vector3(startX, startY, posZ);
-
-            Material playerMat = new Material(Shader.Find("Sprites/Default"));
-            if (playerTexOff != null)
-            {
-                playerMat.mainTexture = playerTexOff;
-            }
-            playerMat.color = Color.white;
-            playerMat.enableInstancing = true;
-
-            Renderer rend = pGo.GetComponent<Renderer>();
-            if (rend != null)
-            {
-                rend.sharedMaterial = playerMat;
-            }
-            m_playerMaterials.Add(playerMat);
-
-            // Title.cs 내부에 정의된 RhythmicPlayerCube 컴포넌트 부착 (글로벌 링커에 의해 정상 결속)
-            RhythmicPlayerCube pc = pGo.AddComponent<RhythmicPlayerCube>();
-            pc.Init(trackerT, startX, startY);
-
-            m_playerObjects.Add(pGo);
-        }
     }
 
     private void ClearBackground()
