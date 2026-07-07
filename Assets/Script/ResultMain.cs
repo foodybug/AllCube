@@ -25,6 +25,9 @@ public class ResultMain : MonoBehaviour
     private List<GameObject> m_playerObjects = new List<GameObject>();
     private List<Material> m_playerMaterials = new List<Material>();
 
+    // 실시간 서버 랭킹 결과 문자열 캐싱
+    private string m_serverLeaderboardText = "";
+
     void Awake()
     {
         if (s_Instance != null && s_Instance != this)
@@ -248,8 +251,25 @@ public class ResultMain : MonoBehaviour
             bestSuffix = " <color=yellow>[NEW BEST!]</color>";
         }
 
-        string rankStr = GetWorldRankString(MainManager.lastMaxHeight);
-        string textContent = string.Format("{0:D2}:{1:D2}\nHeight {2}m\nBest {3}m{4}\n{5}", nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, bestSuffix, rankStr);
+        string rankHeader = "";
+        string leaderboardBody = "";
+
+        if (MainManager.lastServerRank > 0)
+        {
+            string suffix = GetRankSuffix(MainManager.lastServerRank);
+            rankHeader = string.Format("<size=38><color=yellow><b>Rank: {0}{1} (Top {2:F2}%)</b></color></size>", 
+                MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
+            leaderboardBody = m_serverLeaderboardText;
+        }
+        else
+        {
+            string rankStr = GetWorldRankString(MainManager.lastMaxHeight);
+            rankHeader = string.Format("<size=38><color=yellow><b>{0}</b></color></size>", rankStr);
+            leaderboardBody = "Server offline. Rankings unavailable.";
+        }
+
+        string textContent = string.Format("{0:D2}:{1:D2}\nHeight {2}m  Best {3}m{4}\n\n{5}\n\n{6}", 
+            nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, bestSuffix, rankHeader, leaderboardBody);
 
         if (ui.textResultTime != null)
         {
@@ -262,6 +282,7 @@ public class ResultMain : MonoBehaviour
     {
         MainManager.lastServerRank = -1;
         MainManager.lastServerPercentage = -1.0;
+        m_serverLeaderboardText = "";
 
         string url = m_rankingServerUrl;
         string json = string.Format("{{\"deviceId\":\"{0}\",\"height\":{1}}}", SystemInfo.deviceUniqueIdentifier, score);
@@ -272,7 +293,7 @@ public class ResultMain : MonoBehaviour
             request.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 2; 
+            request.timeout = 5; 
 
             yield return request.SendWebRequest();
 
@@ -283,36 +304,65 @@ public class ResultMain : MonoBehaviour
                     string responseText = request.downloadHandler.text;
                     Debug.Log("[ResultMain WebServer] Submit Score Success: " + responseText);
 
-                    int rankIdx = responseText.IndexOf("\"rank\":");
-                    int pctIdx = responseText.IndexOf("\"topPercentage\":");
-
-                    if (rankIdx != -1 && pctIdx != -1)
+                    RankingResponse res = JsonUtility.FromJson<RankingResponse>(responseText);
+                    if (res != null)
                     {
-                        string rankSub = responseText.Substring(rankIdx + 7);
-                        int rankComma = rankSub.IndexOf(",");
-                        if (rankComma != -1) rankSub = rankSub.Substring(0, rankComma);
-                        int rank = int.Parse(rankSub.Trim());
+                        MainManager.lastServerRank = res.rank;
+                        MainManager.lastServerPercentage = res.topPercentage;
 
-                        string pctSub = responseText.Substring(pctIdx + 16);
-                        int pctComma = pctSub.IndexOf(",");
-                        if (pctComma != -1) pctSub = pctSub.Substring(0, pctComma);
-                        int pctEndBracket = pctSub.IndexOf("}");
-                        if (pctEndBracket != -1) pctSub = pctSub.Substring(0, pctEndBracket);
-                        double pct = double.Parse(pctSub.Trim());
+                        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                        if (res.leaderboardWindow != null && res.leaderboardWindow.Count > 0)
+                        {
+                            foreach (var entry in res.leaderboardWindow)
+                            {
+                                string suffix = GetRankSuffix(entry.rank);
+                                string nameStr = entry.deviceId;
+                                if (nameStr.Length > 8)
+                                {
+                                    nameStr = nameStr.Substring(0, 4) + "****";
+                                }
 
-                        MainManager.lastServerRank = rank;
-                        MainManager.lastServerPercentage = pct;
+                                if (entry.isSelf)
+                                {
+                                    sb.AppendLine(string.Format("<color=yellow><b>▶ {0}{1}  YOU  {2}m ◀</b></color>", entry.rank, suffix, entry.height));
+                                }
+                                else
+                                {
+                                    sb.AppendLine(string.Format("{0}{1}  {2}  {3}m", entry.rank, suffix, nameStr, entry.height));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine("No leaderboard entries found.");
+                        }
+                        m_serverLeaderboardText = sb.ToString();
                     }
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError("[ResultMain WebServer] JSON parsing error: " + e.Message);
+                    Debug.LogError("[ResultMain WebServer] JSON parsing error: " + e.Message + " | Response: " + request.downloadHandler.text);
+                    m_serverLeaderboardText = "";
                 }
             }
             else
             {
                 Debug.LogWarning("[ResultMain WebServer] Score submit failed or server offline: " + request.error);
+                m_serverLeaderboardText = "";
             }
+        }
+        UpdateResultText();
+    }
+
+    private static string GetRankSuffix(int rank)
+    {
+        if (rank % 100 >= 11 && rank % 100 <= 13) return "th";
+        switch (rank % 10)
+        {
+            case 1: return "st";
+            case 2: return "nd";
+            case 3: return "rd";
+            default: return "th";
         }
     }
 
@@ -322,18 +372,8 @@ public class ResultMain : MonoBehaviour
 
         if (MainManager.lastServerRank > 0)
         {
-            if (MainManager.lastServerRank == 1)
-            {
-                return string.Format("<color=yellow>Rank: 1st (Top {0:F2}% / Server)</color>", MainManager.lastServerPercentage);
-            }
-            else if (MainManager.lastServerPercentage < 0.1)
-            {
-                return string.Format("<color=yellow>Rank: {0:n0}th (Top {1:F4}% / Server)</color>", MainManager.lastServerRank, MainManager.lastServerPercentage);
-            }
-            else
-            {
-                return string.Format("Rank: {0:n0}th (Top {1:F2}% / Server)", MainManager.lastServerRank, MainManager.lastServerPercentage);
-            }
+            string suffix = GetRankSuffix(MainManager.lastServerRank);
+            return string.Format("Rank: {0}{1} (Top {2:F2}% / Server)", MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
         }
 
         long totalPlayers = 1542800;
@@ -343,15 +383,16 @@ public class ResultMain : MonoBehaviour
 
         if (rank == 1)
         {
-            return "<color=yellow>Rank: 1st (Top 0.0001%)</color>";
+            return "Rank: 1st (Top 0.0001%)";
         }
         else if (topPercentage < 0.1)
         {
-            return string.Format("<color=yellow>Rank: {0:n0}th (Top {1:F4}%)</color>", rank, topPercentage);
+            return string.Format("Rank: {0:n0}th (Top {1:F4}%)", rank, topPercentage);
         }
         else
         {
-            return string.Format("Rank: {0:n0}th (Top {1:F2}%)", rank, topPercentage);
+            string suffix = GetRankSuffix((int)rank);
+            return string.Format("Rank: {0:n0}{1} (Top {2:F2}%)", rank, suffix, topPercentage);
         }
     }
 
@@ -571,4 +612,22 @@ public class ResultMain : MonoBehaviour
             m_goVirtualCamera = null;
         }
     }
+}
+
+[System.Serializable]
+public class RankingEntry
+{
+    public int rank;
+    public string deviceId;
+    public int height;
+    public bool isSelf;
+}
+
+[System.Serializable]
+public class RankingResponse
+{
+    public int rank;
+    public double topPercentage;
+    public int totalPlayers;
+    public List<RankingEntry> leaderboardWindow;
 }
