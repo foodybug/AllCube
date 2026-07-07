@@ -256,16 +256,24 @@ public class ResultMain : MonoBehaviour
 
         if (MainManager.lastServerRank > 0)
         {
+            // 1. 서버 실시간 랭킹 연동 성공
             string suffix = GetRankSuffix(MainManager.lastServerRank);
             rankHeader = string.Format("<size=38><color=yellow><b>Rank: {0}{1} (Top {2:F2}%)</b></color></size>", 
                 MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
             leaderboardBody = m_serverLeaderboardText;
         }
-        else
+        else if (MainManager.lastServerRank == -2)
         {
+            // 2. 서버 연동 실패 (최종 로컬 폴백)
             string rankStr = GetWorldRankString(MainManager.lastMaxHeight);
             rankHeader = string.Format("<size=38><color=yellow><b>{0}</b></color></size>", rankStr);
-            leaderboardBody = "Server offline. Rankings unavailable.";
+            leaderboardBody = "Server offline. Shown local estimation.";
+        }
+        else
+        {
+            // 3. 서버 응답 대기 상태 (Connecting...)
+            rankHeader = "<size=38><color=gray><b>Connecting Server...</b></color></size>";
+            leaderboardBody = "Loading global leaderboard rankings...";
         }
 
         string textContent = string.Format("{0:D2}:{1:D2}\nHeight {2}m  Best {3}m{4}\n\n{5}\n\n{6}", 
@@ -342,12 +350,14 @@ public class ResultMain : MonoBehaviour
                 catch (System.Exception e)
                 {
                     Debug.LogError("[ResultMain WebServer] JSON parsing error: " + e.Message + " | Response: " + request.downloadHandler.text);
+                    MainManager.lastServerRank = -2;
                     m_serverLeaderboardText = "";
                 }
             }
             else
             {
                 Debug.LogWarning("[ResultMain WebServer] Score submit failed or server offline: " + request.error);
+                MainManager.lastServerRank = -2;
                 m_serverLeaderboardText = "";
             }
         }
