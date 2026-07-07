@@ -15,6 +15,7 @@ public class UI_Title : MonoBehaviour
 
     private void Awake()
     {
+        Screen.orientation = ScreenOrientation.Portrait;
         AutoAssignComponents();
     }
 

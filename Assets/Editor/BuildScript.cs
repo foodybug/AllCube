@@ -11,6 +11,7 @@ public class BuildScript
         // 안드로이드 패키지 명(Application Identifier) 및 버전 코드 자동 세팅
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.foodybug.allcube");
         PlayerSettings.bundleVersion = "1.0.0";
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
         // 안드로이드 호환성 API 레벨 설정 (최신 빌드 안정화: Min API 25 / Target API 34)
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;

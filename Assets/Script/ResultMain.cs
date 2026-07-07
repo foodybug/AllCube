@@ -38,6 +38,7 @@ public class ResultMain : MonoBehaviour
             return;
         }
         s_Instance = this;
+        Screen.orientation = ScreenOrientation.Portrait;
     }
 
     void Start()
