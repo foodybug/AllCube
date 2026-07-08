@@ -304,7 +304,7 @@ public class MapManager : MonoBehaviour
                     float currentFloorY = m_goFloor.transform.position.y;
 
                     // Place it sufficiently below the player, outside the bottom edge of the camera
-                    float targetFloorWorldY = playerWorldY - cameraHeight - 4.0f;
+                    float targetFloorWorldY = playerWorldY - cameraHeight - 12.0f;
                     
                     // Y=100 거대 큐브의 윗면이 targetFloorWorldY + 1.0f 에 오도록 실제 중심 Y 포지션을 아래로 49.0f 보정
                     float targetPosCenterY = targetFloorWorldY - 49.0f;
@@ -314,7 +314,7 @@ public class MapManager : MonoBehaviour
                     {
                         Vector3 floorPos = m_goFloor.transform.position;
                         floorPos.x = playerGo.transform.position.x; // Keep it centered horizontally with the player
-                        floorPos.y = targetFloorWorldY;
+                        floorPos.y = targetPosCenterY;
                         m_goFloor.transform.position = floorPos;
                     }
 
@@ -445,7 +445,7 @@ public class MapManager : MonoBehaviour
         float initialFloorY = -10.0f;
         if (CameraManager.Instance != null && CameraManager.Instance.mainCamera != null)
         {
-            initialFloorY = -CameraManager.Instance.mainCamera.orthographicSize - 4.0f;
+            initialFloorY = -CameraManager.Instance.mainCamera.orthographicSize - 12.0f;
         }
 
         // 가로 X scale 150f, 세로 Y 두께 100f, 앞뒤 Z 두께 10f 로 웅장하게 확대
