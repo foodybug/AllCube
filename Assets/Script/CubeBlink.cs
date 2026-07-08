@@ -28,6 +28,13 @@ public class CubeBlink : MonoBehaviour
         {
             m_collider.isTrigger = true;
 
+            // 런타임 알파 투명도(Fade) 연산이 100% 보장되는 Sprites/Default 셰이더 적용
+            Shader transShader = Shader.Find("Sprites/Default");
+            if (transShader != null)
+            {
+                m_renderer.material.shader = transShader;
+            }
+
             // 안전하게 사용 가능한 색상 프로퍼티 찾기
             if (m_renderer.material.HasProperty("_Color"))
             {
