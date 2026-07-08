@@ -567,6 +567,13 @@ public class MapManager : MonoBehaviour
                 }
                 if (isBoundaryWall)
                 {
+                    int randIdx = Random.Range(4, 8);
+                    if (texCube != null && randIdx < texCube.Length && texCube[randIdx] != null && rendZero != null)
+                    {
+                        Material deadlyMat = new Material(GetSharedMaterial(8));
+                        deadlyMat.mainTexture = texCube[randIdx];
+                        rendZero.material = deadlyMat;
+                    }
                     go.AddComponent<CubeDeadly>();
                 }
                 else if (isFlying)
