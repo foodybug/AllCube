@@ -303,11 +303,14 @@ public class MapManager : MonoBehaviour
                     float playerWorldY = playerGo.transform.position.y;
                     float currentFloorY = m_goFloor.transform.position.y;
 
-                    // Place it sufficiently below the player, outside the bottom edge of the camera so it remains invisible during normal play
+                    // Place it sufficiently below the player, outside the bottom edge of the camera
                     float targetFloorWorldY = playerWorldY - cameraHeight - 4.0f;
+                    
+                    // Y=100 거대 큐브의 윗면이 targetFloorWorldY + 1.0f 에 오도록 실제 중심 Y 포지션을 아래로 49.0f 보정
+                    float targetPosCenterY = targetFloorWorldY - 49.0f;
 
                     // Only move UP, never down
-                    if (targetFloorWorldY > currentFloorY)
+                    if (targetPosCenterY > currentFloorY)
                     {
                         Vector3 floorPos = m_goFloor.transform.position;
                         floorPos.x = playerGo.transform.position.x; // Keep it centered horizontally with the player
@@ -428,8 +431,8 @@ public class MapManager : MonoBehaviour
             Renderer rend = m_goFloor.GetComponent<Renderer>();
             if (rend != null)
             {
-                rend.material.color = Color.gray;
-                rend.enabled = false; // Invisible dead zone
+                rend.material.color = new Color(0.12f, 0.12f, 0.12f, 1.0f); // 세련된 매트 챠콜 블랙
+                rend.enabled = true; // 데드존 가시성 활성화
             }
 
             Collider col = m_goFloor.GetComponent<Collider>();
@@ -445,8 +448,11 @@ public class MapManager : MonoBehaviour
             initialFloorY = -CameraManager.Instance.mainCamera.orthographicSize - 4.0f;
         }
 
-        m_goFloor.transform.position = new Vector3(0f, initialFloorY, 0f);
-        m_goFloor.transform.localScale = new Vector3(100f, 2f, 2f); // X 100, Y 두께 2, Z 두께 2 (프러스텀 클리핑 방지)
+        // 가로 X scale 150f, 세로 Y 두께 100f, 앞뒤 Z 두께 10f 로 웅장하게 확대
+        m_goFloor.transform.localScale = new Vector3(150f, 100f, 10f);
+        
+        // 큐브 상단면이 initialFloorY + 1.0f 에 놓이도록 Y 중심 위치를 아래로 49.0f 하향 조정
+        m_goFloor.transform.position = new Vector3(0f, initialFloorY - 49.0f, 0f);
     }
 
     private eMapProp _GetMapProp(Color color)
