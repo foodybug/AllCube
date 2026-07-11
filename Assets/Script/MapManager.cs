@@ -713,8 +713,25 @@ public class MapManager : MonoBehaviour
 
     public void RemoveCoin(GameObject go)
     {
+        Coin coinComp = go.GetComponent<Coin>();
+        int gradeVal = coinComp != null ? coinComp.grade : 1;
+
+        // 기본 이펙트 생성
         GameObject goEff = GameObject.Instantiate(goCoinEffSrc) as GameObject;
         goEff.transform.position = go.transform.position;
+
+        // 4등급일 때 추가 1개(총 2개), 5등급일 때 추가 2개(총 3개) 이펙트 소환
+        int extraEffects = 0;
+        if (gradeVal == 4) extraEffects = 1;
+        else if (gradeVal == 5) extraEffects = 2;
+
+        for (int i = 0; i < extraEffects; i++)
+        {
+            GameObject extraEff = GameObject.Instantiate(goCoinEffSrc) as GameObject;
+            // 시각적 입체 분산을 위해 미세 랜덤 오프셋 적용
+            Vector3 offset = new Vector3(Random.Range(-0.4f, 0.4f), Random.Range(-0.4f, 0.4f), 0f);
+            extraEff.transform.position = go.transform.position + offset;
+        }
 
         AudioManager.Instance.Play("Sound/coin_eff", 0.3f);
 
@@ -727,15 +744,11 @@ public class MapManager : MonoBehaviour
         m_nTotalCoinsCollected++;
 
         int addJumpAmount = 3;
-        Coin coinComp = go.GetComponent<Coin>();
-        if (coinComp != null)
-        {
-            if (coinComp.grade == 1) addJumpAmount = 1;
-            else if (coinComp.grade == 2) addJumpAmount = 2;
-            else if (coinComp.grade == 3) addJumpAmount = 3;
-            else if (coinComp.grade == 4) addJumpAmount = 6;
-            else if (coinComp.grade == 5) addJumpAmount = 10;
-        }
+        if (gradeVal == 1) addJumpAmount = 1;
+        else if (gradeVal == 2) addJumpAmount = 2;
+        else if (gradeVal == 3) addJumpAmount = 3;
+        else if (gradeVal == 4) addJumpAmount = 6;
+        else if (gradeVal == 5) addJumpAmount = 10;
 
         if (CameraManager.Instance.Target != null)
         {
