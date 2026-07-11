@@ -189,14 +189,11 @@ public class MapManager : MonoBehaviour
     [SerializeField] private bool m_enableInfiniteScroll = true;
     [SerializeField] private float m_scrollWidth = 60.0f;
 
-
-
     public int CoinCount { get { return m_listCoin.Count; } }
 
     void Awake()
     {
         m_instance = this;
-
 
         Renderer srcRend = goCubeSrc != null ? goCubeSrc.GetComponent<Renderer>() : null;
         if (srcRend != null && srcRend.sharedMaterial != null)
@@ -265,6 +262,33 @@ public class MapManager : MonoBehaviour
             {
                 float playerY = playerGo.transform.position.y / (m_fCubeSize > 0f ? m_fCubeSize : 1.0f);
 
+                // 플레이어가 가로 경계선(minSpawnX, maxSpawnX) 바깥으로 나갔을 때 즉사 처리
+                Player playerComp = playerGo.GetComponent<Player>();
+                if (playerComp != null)
+                {
+                    int currentHeightY = Mathf.RoundToInt(playerY);
+                    DifficultyTier tier = GetTierForHeight(currentHeightY);
+                    
+                    float playerWorldX = playerGo.transform.position.x;
+                    float size = m_fCubeSize > 0f ? m_fCubeSize : 1.0f;
+                    float currentScrollWidth = (tier.maxSpawnX - tier.minSpawnX) * size;
+                    
+                    if (currentScrollWidth > 0f)
+                    {
+                        float cycle = Mathf.Round(playerWorldX / currentScrollWidth);
+                        float localPlayerX = playerWorldX - cycle * currentScrollWidth;
+                        float maxLimit = tier.maxSpawnX * size;
+                        
+                        // 기둥 경계 벽 중심선 너머(마진 0.4f)로 넘어가려 할 때 즉시 사망 판정
+                        if (Mathf.Abs(localPlayerX) > (maxLimit - 0.4f))
+                        {
+                            Debug.Log($"[MapManager OutOfBounds Check] Player out of bounds! heightY: {currentHeightY}, localX: {localPlayerX:F2}, Limit: {maxLimit - 0.4f:F2}. Killing player.");
+                            MainManager.lastDeathCause = "DeadZone";
+                            playerComp.KillPlayer();
+                        }
+                    }
+                }
+
                 // 배경색 RGB 무한 순환 연동 (높이 50m 당 한 사이클씩 더 자주 순환)
                 float hueCycleHeight = 50.0f;
                 float bgPlayerWorldY = playerGo.transform.position.y;
@@ -305,8 +329,9 @@ public class MapManager : MonoBehaviour
 
                     // Place it sufficiently below the player, outside the bottom edge of the camera
                     float targetFloorWorldY = playerWorldY - cameraHeight - 12.0f;
-                    
+
                     // Y=100 거대 큐브의 윗면이 targetFloorWorldY + 1.0f 에 오도록 실제 중심 Y 포지션을 아래로 49.0f 보정
+
                     float targetPosCenterY = targetFloorWorldY - 49.0f;
 
                     // Only move UP, never down
@@ -450,8 +475,9 @@ public class MapManager : MonoBehaviour
 
         // 가로 X scale 150f, 세로 Y 두께 100f, 앞뒤 Z 두께 10f 로 웅장하게 확대
         m_goFloor.transform.localScale = new Vector3(150f, 100f, 10f);
-        
+
         // 큐브 상단면이 initialFloorY + 1.0f 에 놓이도록 Y 중심 위치를 아래로 49.0f 하향 조정
+
         m_goFloor.transform.position = new Vector3(0f, initialFloorY - 49.0f, 0f);
     }
 
@@ -648,8 +674,6 @@ public class MapManager : MonoBehaviour
             scroll.Init(vPos.x, scrollWidth, playerT);
             m_scrollObjects.Add(scroll);
         }
-
-
 
         return go;
     }
