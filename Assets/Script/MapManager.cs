@@ -665,10 +665,9 @@ public class MapManager : MonoBehaviour
             Util.MyDestroy(tempCube);
         }
 
-        // Coin 컴포넌트 부착
-        go.AddComponent<Coin>();
-
-        go.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        // Coin 컴포넌트 부착 및 등급(grade 1~5) 무작위 부여
+        Coin coin = go.AddComponent<Coin>();
+        coin.grade = Random.Range(1, 6);
 
         if (m_enableInfiniteScroll)
         {
@@ -727,12 +726,23 @@ public class MapManager : MonoBehaviour
 
         m_nTotalCoinsCollected++;
 
+        int addJumpAmount = 3;
+        Coin coinComp = go.GetComponent<Coin>();
+        if (coinComp != null)
+        {
+            if (coinComp.grade == 1) addJumpAmount = 1;
+            else if (coinComp.grade == 2) addJumpAmount = 2;
+            else if (coinComp.grade == 3) addJumpAmount = 3;
+            else if (coinComp.grade == 4) addJumpAmount = 6;
+            else if (coinComp.grade == 5) addJumpAmount = 10;
+        }
+
         if (CameraManager.Instance.Target != null)
         {
             Player player = CameraManager.Instance.Target.GetComponent<Player>();
             if (player != null)
             {
-                player.AddJumps(3);
+                player.AddJumps(addJumpAmount);
             }
         }
 
