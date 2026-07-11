@@ -42,6 +42,7 @@ public class Util : MonoBehaviour
 public class Coin : MonoBehaviour
 {
     private Renderer m_renderer;
+    private Transform m_playerTransform;
 
     void Awake()
     {
@@ -51,6 +52,23 @@ public class Coin : MonoBehaviour
     void Start()
     {
         ApplyRandomTexture();
+    }
+
+    void Update()
+    {
+        if (m_playerTransform == null)
+        {
+            Player player = FindAnyObjectByType<Player>();
+            if (player != null)
+            {
+                m_playerTransform = player.transform;
+            }
+        }
+
+        if (m_playerTransform != null)
+        {
+            transform.rotation = m_playerTransform.rotation;
+        }
     }
 
     public void ApplyRandomTexture()
