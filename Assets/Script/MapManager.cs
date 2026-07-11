@@ -665,6 +665,9 @@ public class MapManager : MonoBehaviour
             Util.MyDestroy(tempCube);
         }
 
+        // Coin 컴포넌트 부착
+        go.AddComponent<Coin>();
+
         go.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
         if (m_enableInfiniteScroll)

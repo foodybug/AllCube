@@ -38,3 +38,45 @@ public class Util : MonoBehaviour
 #endif
 	}
 }
+
+public class Coin : MonoBehaviour
+{
+    private Renderer m_renderer;
+
+    void Awake()
+    {
+        m_renderer = GetComponentInChildren<Renderer>();
+    }
+
+    void Start()
+    {
+        ApplyRandomTexture();
+    }
+
+    public void ApplyRandomTexture()
+    {
+        if (m_renderer == null)
+        {
+            m_renderer = GetComponentInChildren<Renderer>();
+        }
+
+        if (m_renderer != null && MapManager.Instance != null)
+        {
+            Texture[] texCube = MapManager.Instance.texCube;
+            if (texCube != null && texCube.Length > 0)
+            {
+                int maxIdx = Mathf.Min(3, texCube.Length - 1);
+                if (maxIdx >= 0)
+                {
+                    int randIdx = Random.Range(0, maxIdx + 1);
+                    Texture targetTex = texCube[randIdx];
+
+                    if (targetTex != null)
+                    {
+                        m_renderer.material.mainTexture = targetTex;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -254,8 +254,8 @@ public class Player : MonoBehaviour
 
         if (null == cubeBreak)
         {
-            // 부딪힌 대상이 진짜 Coin인 경우에만 획득 처리
-            if (collider.gameObject.name.Contains("Coin"))
+            // 부딪힌 대상이 진짜 Coin 또는 Coin 컴포넌트를 가진 경우에만 획득 처리
+            if (collider.gameObject.name.Contains("Coin") || collider.gameObject.GetComponent<Coin>() != null)
             {
                 MapManager.Instance.RemoveCoin(collider.gameObject);
             }
