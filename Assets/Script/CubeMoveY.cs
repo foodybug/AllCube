@@ -13,8 +13,27 @@ public class CubeMoveY : MonoBehaviour
 
 	private Rigidbody m_rb;
 
+	void Awake()
+	{
+		m_goCube = gameObject;
+		m_rb = GetComponent<Rigidbody>();
+		if (m_rb == null)
+		{
+			m_rb = gameObject.AddComponent<Rigidbody>();
+		}
+		m_rb.isKinematic = true;
+		m_rb.useGravity = false;
+	}
+
 	void Start()
 	{
+		m_vOrgPos = m_vCurPos = transform.position;
+
+		Renderer rend = GetComponent<Renderer>();
+		if (rend != null && MapManager.Instance != null)
+		{
+			rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(5);
+		}
 	}
 	
 	void FixedUpdate()
@@ -67,8 +86,8 @@ public class CubeMoveY : MonoBehaviour
 
 	public void Init(GameObject go)
 	{
-		m_goCube = go;
-		m_rb = m_goCube.GetComponent<Rigidbody>();
+		if (m_goCube == null) m_goCube = go;
+		if (m_rb == null) m_rb = m_goCube.GetComponent<Rigidbody>();
 		m_vOrgPos = m_vCurPos = m_goCube.transform.position;
 	}
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 
 public class CubeBreak : MonoBehaviour
@@ -6,12 +6,18 @@ public class CubeBreak : MonoBehaviour
 	public GameObject goCube;
 	public int nLife = 3;
 
+	void Awake()
+	{
+		goCube = gameObject;
+	}
+
 	void Start()
 	{
-	}
-	
-	void Update()
-	{
+		Renderer rend = GetComponent<Renderer>();
+		if (rend != null && MapManager.Instance != null)
+		{
+			rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(0);
+		}
 	}
 
 	public int CollisionCube()

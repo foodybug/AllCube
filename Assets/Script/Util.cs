@@ -109,3 +109,15 @@ public class Coin : MonoBehaviour
         }
     }
 }
+
+public class CubeNormal : MonoBehaviour
+{
+    void Start()
+    {
+        Renderer rend = GetComponent<Renderer>();
+        if (rend != null && MapManager.Instance != null)
+        {
+            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(Random.Range(1, 5));
+        }
+    }
+}

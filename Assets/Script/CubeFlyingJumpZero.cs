@@ -6,6 +6,23 @@ public class CubeFlyingJumpZero : MonoBehaviour
     private float m_lifetime = 15.0f;
     private Transform m_playerTransform;
 
+    void Awake()
+    {
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null) Destroy(rb);
+    }
+
+    void Start()
+    {
+        Renderer rend = GetComponent<Renderer>();
+        if (rend != null && MapManager.Instance != null)
+        {
+            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(6);
+        }
+    }
+
     public void InitFlying(float flySpeed, Transform playerTransform)
     {
         speed = flySpeed;

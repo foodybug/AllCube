@@ -6,6 +6,23 @@ public class CubeFastObstacle : MonoBehaviour
     private float m_lifetime = 10.0f;
     private Transform m_playerTransform;
 
+    void Awake()
+    {
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null) Destroy(rb);
+    }
+
+    void Start()
+    {
+        Renderer rend = GetComponent<Renderer>();
+        if (rend != null && MapManager.Instance != null)
+        {
+            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(9);
+        }
+    }
+
     public void InitFlying(float flySpeed, Transform playerTransform)
     {
         speed = flySpeed;

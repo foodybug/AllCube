@@ -517,7 +517,7 @@ public class MapManager : MonoBehaviour
         return false;
     }
 
-    private Material GetSharedMaterial(int index)
+    public Material GetSharedMaterial(int index)
     {
         if (m_sharedMaterials == null || m_sharedMaterials.Length == 0) return null;
         if (index >= 0 && index < m_sharedMaterials.Length && m_sharedMaterials[index] != null)
@@ -549,63 +549,24 @@ public class MapManager : MonoBehaviour
             case eMapProp.eMapProp_Coin: break;
 
             case eMapProp.eMapProp_Normal:
-                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(Random.Range(1, 5));
+                go.AddComponent<CubeNormal>();
                 break;
 
             case eMapProp.eMapProp_Break:
-                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(0);
                 go.AddComponent<CubeBreak>();
-                CubeBreak cubeBreak = go.GetComponent<CubeBreak>();
-                cubeBreak.goCube = go;
                 break;
 
             case eMapProp.eMapProp_MoveX:
-                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(5);
-                Rigidbody rbX = go.GetComponent<Rigidbody>();
-                if (rbX == null) rbX = go.AddComponent<Rigidbody>();
-                rbX.isKinematic = true;
-                rbX.useGravity = false;
                 go.AddComponent<CubeMoveX>();
-                CubeMoveX cubeMoveX = go.GetComponent<CubeMoveX>();
-                cubeMoveX.Init(go);
                 break;
 
             case eMapProp.eMapProp_MoveY:
-                go.GetComponent<Renderer>().sharedMaterial = GetSharedMaterial(5);
-                Rigidbody rbY = go.GetComponent<Rigidbody>();
-                if (rbY == null) rbY = go.AddComponent<Rigidbody>();
-                rbY.isKinematic = true;
-                rbY.useGravity = false;
                 go.AddComponent<CubeMoveY>();
-                CubeMoveY cubeMoveY = go.GetComponent<CubeMoveY>();
-                cubeMoveY.Init(go);
                 break;
 
             case eMapProp.eMapProp_JumpZero:
-                Renderer rendZero = go.GetComponent<Renderer>();
-                if (rendZero != null)
-                {
-                    rendZero.sharedMaterial = GetSharedMaterial(isBoundaryWall ? 8 : 6);
-                }
-                Collider colZero = go.GetComponent<Collider>();
-                if (colZero != null)
-                {
-                    colZero.isTrigger = !isBoundaryWall;
-                }
-                Rigidbody rbZero = go.GetComponent<Rigidbody>();
-                if (rbZero != null)
-                {
-                    Util.MyDestroy(rbZero);
-                }
                 if (isBoundaryWall)
                 {
-                    int randIdx = Random.Range(4, 8);
-                    if (texCube != null && randIdx < texCube.Length && texCube[randIdx] != null && rendZero != null)
-                    {
-                        Material deadlyMat = new Material(GetSharedMaterial(8));
-                        deadlyMat.mainTexture = texCube[randIdx];
-                        rendZero.material = deadlyMat;
-                    }
                     go.AddComponent<CubeDeadly>();
                 }
                 else if (isFlying)
@@ -620,21 +581,6 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_Blink:
-                Renderer rendBlink = go.GetComponent<Renderer>();
-                if (rendBlink != null)
-                {
-                    rendBlink.sharedMaterial = GetSharedMaterial(isBoundaryWall ? 8 : 7);
-                }
-                Collider colBlink = go.GetComponent<Collider>();
-                if (colBlink != null)
-                {
-                    colBlink.isTrigger = !isBoundaryWall;
-                }
-                Rigidbody rbBlink = go.GetComponent<Rigidbody>();
-                if (rbBlink != null)
-                {
-                    Util.MyDestroy(rbBlink);
-                }
                 go.AddComponent<CubeBlink>();
                 break;
         }

@@ -4,6 +4,23 @@ public class CubeJumpZero : MonoBehaviour
 {
     public bool isBoundaryWall = false;
 
+    void Awake()
+    {
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.isTrigger = true;
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null) Destroy(rb);
+    }
+
+    void Start()
+    {
+        Renderer rend = GetComponent<Renderer>();
+        if (rend != null && MapManager.Instance != null)
+        {
+            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(6);
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (isBoundaryWall) return; // 경계 장벽은 Trigger가 아니므로 처리하지 않음

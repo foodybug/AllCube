@@ -18,6 +18,9 @@ public class CubeBlink : MonoBehaviour
     {
         m_renderer = GetComponent<Renderer>();
         m_collider = GetComponent<Collider>();
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null) Destroy(rb);
     }
 
     private string m_colorPropName = null;
@@ -27,6 +30,11 @@ public class CubeBlink : MonoBehaviour
         if (m_renderer != null && m_collider != null)
         {
             m_collider.isTrigger = true;
+
+            if (MapManager.Instance != null)
+            {
+                m_renderer.sharedMaterial = MapManager.Instance.GetSharedMaterial(7);
+            }
 
             // 런타임 알파 투명도(Fade) 연산이 100% 보장되는 Sprites/Default 셰이더 적용
             Shader transShader = Shader.Find("Sprites/Default");
