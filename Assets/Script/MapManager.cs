@@ -60,13 +60,11 @@ public class MapManager : MonoBehaviour
     }
 
     [Header("Stage Generation Settings")]
-    [SerializeField] private int m_minSpawnX = -30;
-    [SerializeField] private int m_maxSpawnX = 30;
     [SerializeField] private int m_generationAheadRange = 20;
     [SerializeField] private int m_cleanupBehindRange = 18;
 
-    public int MinSpawnX { get { return m_minSpawnX; } }
-    public int MaxSpawnX { get { return m_maxSpawnX; } }
+    public int MinSpawnX { get { return GetTierForHeight(0).minSpawnX; } }
+    public int MaxSpawnX { get { return GetTierForHeight(0).maxSpawnX; } }
 
     [Header("Level Design Settings")]
     [SerializeField]
@@ -411,8 +409,6 @@ public class MapManager : MonoBehaviour
         // 무한 모드에서는 stage 대신 시작점(y=0) 기준의 DifficultyTier 설정을 최초 적용합니다.
         DifficultyTier config = GetTierForHeight(0);
 
-        m_minSpawnX = config.minSpawnX;
-        m_maxSpawnX = config.maxSpawnX;
         m_staticObstacleInterval = config.staticObstacleInterval;
         m_flyingObstacleInterval = config.flyingObstacleInterval;
         m_coinInterval = config.coinInterval;
@@ -422,7 +418,7 @@ public class MapManager : MonoBehaviour
         m_initialJumps = config.initialJumps;
 
         // 무한 스크롤 반복 가로폭을 기둥 사이의 정확한 거리로 동적 계산
-        m_scrollWidth = (m_maxSpawnX - m_minSpawnX) * m_fCubeSize;
+        m_scrollWidth = (config.maxSpawnX - config.minSpawnX) * m_fCubeSize;
     }
 
     public void LoadCubeMap(int nStage)
