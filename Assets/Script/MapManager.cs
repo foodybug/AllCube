@@ -52,6 +52,8 @@ public class MapManager : MonoBehaviour
         public int maxSpawnX;
         public int staticObstacleInterval;
         public int flyingObstacleInterval;
+        public int blinkObstacleInterval; // Blink 장애물 생성 주기 (0 이면 미생성)
+        public int minBlinkHeight;        // Blink 장애물이 등장하기 시작하는 최소 높이
         public int coinInterval;
         public int coinSequence;
         public float minFlyingSpeed;
@@ -70,11 +72,11 @@ public class MapManager : MonoBehaviour
     [SerializeField]
     private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>()
     {
-        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10 },
-        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8 },
-        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7 },
-        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5 },
-        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4 }
+        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10 },
+        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8 },
+        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7 },
+        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5 },
+        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4 }
     };
 
     // 현재 레벨에 적용되는 런타임 세팅 값들
@@ -131,6 +133,8 @@ public class MapManager : MonoBehaviour
             activeTier.maxSpawnX = 30;
             activeTier.staticObstacleInterval = 5;
             activeTier.flyingObstacleInterval = 8;
+            activeTier.blinkObstacleInterval = 0; // 기본 비활성
+            activeTier.minBlinkHeight = 0;
             activeTier.coinInterval = 3;
             activeTier.coinSequence = 1;
             activeTier.minFlyingSpeed = 6.0f;
@@ -147,6 +151,12 @@ public class MapManager : MonoBehaviour
 
             // flyingObstacleInterval (비행 장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
             activeTier.flyingObstacleInterval = Mathf.Max(2, activeTier.flyingObstacleInterval - cycleCount);
+
+            // blinkObstacleInterval (깜빡이 장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
+            if (activeTier.blinkObstacleInterval > 0)
+            {
+                activeTier.blinkObstacleInterval = Mathf.Max(2, activeTier.blinkObstacleInterval - cycleCount);
+            }
 
             // 비행 장애물 속도 증가 (순환당 1.5f씩 상승)
             activeTier.minFlyingSpeed += cycleCount * 1.5f;
@@ -857,8 +867,11 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(_CreateCube(maxX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
 
             bool hasObstacle = false;
-            // 고도 Y >= 8 이상에서 5블록 주기마다 Blink 장애물 생성 (위험과 안전 반복)
-            if (y >= 8 && y % 5 == 0)
+            int blinkInterval = tier.blinkObstacleInterval;
+            int minBlinkY = tier.minBlinkHeight;
+
+            // 난이도 티어에 설정된 조건(최소 높이 및 스폰 주기)에 따라 Blink 장애물 생성
+            if (blinkInterval > 0 && y >= minBlinkY && y % blinkInterval == 0)
             {
                 hasObstacle = true;
                 int randomX = Random.Range(minX + 2, maxX + 1);
