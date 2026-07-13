@@ -36,6 +36,7 @@ public class MapManager : MonoBehaviour
     private List<ParallaxScroll> m_parallaxObjects = new List<ParallaxScroll>();
     private Material m_farSkyMaterial = null;
     private Material m_midCubeMaterial = null;
+    private Material m_farCubeMaterial = null;
     private float m_fCubeSize = 0.0f;
     private float m_fLerp = 0.1f;
 
@@ -1179,6 +1180,10 @@ public class MapManager : MonoBehaviour
             m_midCubeMaterial = new Material(bgShader);
             m_midCubeMaterial.color = new Color(0.12f, 0.1f, 0.22f, 0.45f); // 중경 반투명 보라색 (알파 0.45)
             m_midCubeMaterial.enableInstancing = true; // GPU 인스턴싱 활성화
+
+            m_farCubeMaterial = new Material(bgShader);
+            m_farCubeMaterial.color = new Color(0.06f, 0.05f, 0.16f, 0.35f); // 원경 더 어둡고 투명한 남보라색 (원근감 극대화)
+            m_farCubeMaterial.enableInstancing = true; // GPU 인스턴싱 활성화
         }
 
         // 1. 원경 Quad (Far Background Sky)
@@ -1197,13 +1202,56 @@ public class MapManager : MonoBehaviour
             rendFar.sharedMaterial = m_farSkyMaterial;
         }
 
-        // 2. 중경 거대 큐브군 (Mid Background Cubes)
+        float bgLoopHeight = 120f; // 세로 루프 주기
+        float totalWidth = m_scrollWidth * 1.2f;
+
+        // 2. 원경 거대 큐브군 (Far Background Cubes - 중경보다 훨씬 뒤에 위치하고 느리게 움직임)
+        int farCols = 2;
+        int farRows = 5;
+        float farGridW = totalWidth / farCols;
+        float farGridH = bgLoopHeight / farRows;
+
+        for (int r = 0; r < farRows; r++)
+        {
+            for (int c = 0; c < farCols; c++)
+            {
+                int index = r * farCols + c;
+                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                go.name = "Background_FarCube_" + index;
+                go.transform.parent = m_goBackgroundContainer.transform;
+
+                Collider col = go.GetComponent<Collider>();
+                if (col != null) Util.MyDestroy(col);
+
+                // 원경이므로 원근감을 확보하기 위해 물리 크기를 더 크게 설정 (20f ~ 45f)
+                float scale = Random.Range(20f, 45f);
+                go.transform.localScale = Vector3.one * scale;
+
+                float gridCenterX = -totalWidth * 0.5f + (c + 0.5f) * farGridW;
+                float gridCenterY = -30f + (r + 0.5f) * farGridH;
+
+                float posX = gridCenterX + Random.Range(-farGridW * 0.25f, farGridW * 0.25f);
+                float posY = gridCenterY + Random.Range(-farGridH * 0.25f, farGridH * 0.25f);
+                // 중경(15~35f)보다 뒤쪽 깊은 곳인 Z=55f ~ 75f 에 배치
+                float posZ = Random.Range(55f, 75f);
+                go.transform.position = new Vector3(posX, posY, posZ);
+
+                Renderer rend = go.GetComponent<Renderer>();
+                if (rend != null && m_farCubeMaterial != null)
+                {
+                    rend.sharedMaterial = m_farCubeMaterial;
+                }
+
+                ParallaxScroll parallax = go.AddComponent<ParallaxScroll>();
+                // 중경(0.7/0.85)보다 훨씬 느리게 움직이도록 팩터 0.3f, 0.4f 적용 (카메라를 더 100% 쫓아감)
+                parallax.Init(cameraT, 0.3f, 0.4f, m_scrollWidth, bgLoopHeight);
+                m_parallaxObjects.Add(parallax);
+            }
+        }
+
+        // 3. 중경 거대 큐브군 (Mid Background Cubes)
         int cols = 2; // 가로 2칸
         int rows = 5; // 세로 5칸
-        int midCubeCount = cols * rows; // 총 10개로 축소하여 오버드로우 렉 극적 개선
-        float bgLoopHeight = 120f; // 세로 루프 주기
-
-        float totalWidth = m_scrollWidth * 1.2f;
         float gridW = totalWidth / cols;
         float gridH = bgLoopHeight / rows;
 
@@ -1285,6 +1333,11 @@ public class MapManager : MonoBehaviour
         {
             Util.MyDestroy(m_midCubeMaterial);
             m_midCubeMaterial = null;
+        }
+        if (m_farCubeMaterial != null)
+        {
+            Util.MyDestroy(m_farCubeMaterial);
+            m_farCubeMaterial = null;
         }
     }
 }
