@@ -14,7 +14,8 @@ public class MapManager : MonoBehaviour
         eMapProp_MoveX,
         eMapProp_MoveY,
         eMapProp_JumpZero,
-        eMapProp_Blink
+        eMapProp_Blink,
+        eMapProp_Laser
     }
 
     static MapManager m_instance;
@@ -553,7 +554,11 @@ public class MapManager : MonoBehaviour
             case eMapProp.eMapProp_Coin: break;
 
             case eMapProp.eMapProp_Normal:
-                go.AddComponent<CubeNormal>();
+                Renderer rendNormal = go.GetComponent<Renderer>();
+                if (rendNormal != null)
+                {
+                    rendNormal.sharedMaterial = GetSharedMaterial(Random.Range(1, 5));
+                }
                 break;
 
             case eMapProp.eMapProp_Break:
@@ -586,6 +591,10 @@ public class MapManager : MonoBehaviour
 
             case eMapProp.eMapProp_Blink:
                 go.AddComponent<CubeBlink>();
+                break;
+
+            case eMapProp.eMapProp_Laser:
+                go.AddComponent<CubeLaser>();
                 break;
         }
 
@@ -1021,6 +1030,23 @@ public class MapManager : MonoBehaviour
             }
 
             m_listCube.Add(flyingFastCube);
+        }
+
+        // 설정된 주기에 따라 화면 외곽에서 타겟팅 경고 레이저를 쏘며 날아오는 CubeLaser 장애물 생성
+        if (y >= 8 && y % 18 == 0)
+        {
+            GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
+            float playerWorldX = 0f;
+            if (playerGo != null)
+            {
+                playerWorldX = playerGo.transform.position.x;
+            }
+
+            bool spawnLeft = Random.value > 0.5f;
+            float startWorldX = spawnLeft ? (playerWorldX - 22.0f) : (playerWorldX + 22.0f);
+
+            GameObject laserCube = _CreateCube(0, y, eMapProp.eMapProp_Laser, rowScrollWidth, false, true, startWorldX);
+            m_listCube.Add(laserCube);
         }
 
         // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰)
