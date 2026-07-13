@@ -1243,8 +1243,8 @@ public class MapManager : MonoBehaviour
                 }
 
                 ParallaxScroll parallax = go.AddComponent<ParallaxScroll>();
-                // 중경(0.7/0.85)보다 훨씬 느리게 움직이도록 팩터 0.3f, 0.4f 적용 (카메라를 더 100% 쫓아감)
-                parallax.Init(cameraT, 0.3f, 0.4f, m_scrollWidth, bgLoopHeight);
+                // 중경(0.7/0.85)보다 훨씬 느리게 움직이도록 팩터 0.05f, 0.08f 적용 (카메라를 거의 100% 쫓아가 거의 정적)
+                parallax.Init(cameraT, 0.05f, 0.08f, m_scrollWidth, bgLoopHeight);
                 m_parallaxObjects.Add(parallax);
             }
         }
