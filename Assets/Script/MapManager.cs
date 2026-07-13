@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class MapManager : MonoBehaviour
 {
@@ -59,6 +60,7 @@ public class MapManager : MonoBehaviour
         public float minFlyingSpeed;
         public float maxFlyingSpeed;
         public int initialJumps;
+        public List<GameObject> segmentPrefabs; // 타일맵 기반 조립식 맵 세그먼트 프리팹 리스트
     }
 
     [Header("Stage Generation Settings")]
@@ -72,11 +74,11 @@ public class MapManager : MonoBehaviour
     [SerializeField]
     private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>()
     {
-        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10 },
-        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8 },
-        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7 },
-        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5 },
-        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4 }
+        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4, segmentPrefabs = null }
     };
 
     // 현재 레벨에 적용되는 런타임 세팅 값들
@@ -140,6 +142,7 @@ public class MapManager : MonoBehaviour
             activeTier.minFlyingSpeed = 6.0f;
             activeTier.maxFlyingSpeed = 10.0f;
             activeTier.initialJumps = 10;
+            activeTier.segmentPrefabs = null;
         }
 
         // 3. 순환 횟수(cycleCount)에 따른 보정치 적용 (패널티 강화, 어드밴티지 약화)
@@ -792,158 +795,263 @@ public class MapManager : MonoBehaviour
             m_fCubeSize = 1.0f;
         }
 
-        for (int y = m_highestGeneratedY; y <= targetY; y++)
+        while (m_highestGeneratedY <= targetY)
         {
-            // 현재 Row 'y'에 알맞는 난이도 티어 정보를 가져옵니다.
+            int y = m_highestGeneratedY;
             DifficultyTier tier = GetTierForHeight(y);
-            int minX = tier.minSpawnX;
-            int maxX = tier.maxSpawnX;
-            int staticInterval = tier.staticObstacleInterval;
-            int flyingInterval = tier.flyingObstacleInterval;
-            int coinInt = tier.coinInterval;
-            int coinSeq = tier.coinSequence;
-            float minFlySpeed = tier.minFlyingSpeed;
-            float maxFlySpeed = tier.maxFlyingSpeed;
 
-            // 해당 Row의 기둥 간 거리에 따른 무한 스크롤 폭 계산
-            float rowScrollWidth = (maxX - minX) * m_fCubeSize;
-
-            // 양쪽 끝 경계선(minX, maxX)에 대칭이 맞도록 기둥 배치
-            m_listCube.Add(_CreateCube(minX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
-            m_listCube.Add(_CreateCube(maxX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
-
-            bool hasObstacle = false;
-            int blinkInterval = tier.blinkObstacleInterval;
-            int minBlinkY = tier.minBlinkHeight;
-
-            // 난이도 티어에 설정된 조건(최소 높이 및 스폰 주기)에 따라 Blink 장애물 생성
-            if (blinkInterval > 0 && y >= minBlinkY && y % blinkInterval == 0)
+            // 해당 난이도 구간에 타일맵 세그먼트들이 등록되어 있다면 조립식 세그먼트 생성 작동
+            if (tier.segmentPrefabs != null && tier.segmentPrefabs.Count > 0)
             {
-                hasObstacle = true;
-                int randomX = Random.Range(minX + 2, maxX + 1);
-                m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Blink, rowScrollWidth, false));
+                SpawnSegment(tier);
             }
-
-            // 설정된 주기에 따라 기존의 고정형(공중) JumpZero 장애물 생성 (Blink와 겹치지 않게)
-            if (!hasObstacle && y >= 3 && staticInterval > 0 && y % staticInterval == 0)
+            else
             {
-                hasObstacle = true;
-                // 실제 월드 위치로 대칭 범위 내에서 랜덤 지정
-                int randomX = Random.Range(minX + 2, maxX + 1);
-                m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false));
+                // 프리팹이 등록되지 않았다면 기존 완전 랜덤 1줄 스폰 구동
+                SpawnRandomRow(y, tier);
+                m_highestGeneratedY++;
             }
+        }
+    }
 
-            // 설정된 주기에 따라 화면 외곽에서 가로지르는 비행형 JumpZero 장애물 생성 (관통함)
-            if (y >= 4 && flyingInterval > 0 && y % flyingInterval == 0)
+    private void SpawnSegment(DifficultyTier tier)
+    {
+        // 1. 등록된 프리팹 리스트 중 무작위 추첨
+        GameObject prefab = tier.segmentPrefabs[Random.Range(0, tier.segmentPrefabs.Count)];
+        if (prefab == null)
+        {
+            SpawnRandomRow(m_highestGeneratedY, tier);
+            m_highestGeneratedY++;
+            return;
+        }
+
+        GameObject inst = Instantiate(prefab);
+        Tilemap[] tilemaps = inst.GetComponentsInChildren<Tilemap>();
+        if (tilemaps == null || tilemaps.Length == 0)
+        {
+            Util.MyDestroy(inst);
+            SpawnRandomRow(m_highestGeneratedY, tier);
+            m_highestGeneratedY++;
+            return;
+        }
+
+        // 2. 프리팹 내부 타일들의 실제 Y고도 한계 범위 분석 (원점 보정용)
+        int minY = int.MaxValue;
+        int maxY = int.MinValue;
+        foreach (Tilemap tm in tilemaps)
+        {
+            BoundsInt bounds = tm.cellBounds;
+            foreach (var pos in bounds.allPositionsWithin)
             {
-                hasObstacle = true;
-
-                GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
-                float playerWorldX = 0f;
-                if (playerGo != null)
+                if (tm.HasTile(pos))
                 {
-                    playerWorldX = playerGo.transform.position.x;
+                    if (pos.y < minY) minY = pos.y;
+                    if (pos.y > maxY) maxY = pos.y;
                 }
-
-                // 무작위로 왼쪽 -> 오른쪽 또는 오른쪽 -> 왼쪽으로 날아오도록 설정
-                bool flyRight = Random.value > 0.5f;
-                // 화면 밖 스폰 위치 계산
-                float startWorldX = flyRight ? (playerWorldX - 35.0f) : (playerWorldX + 35.0f);
-                float speedVal = Random.Range(minFlySpeed, maxFlySpeed);
-                float finalSpeed = flyRight ? speedVal : -speedVal;
-
-                // 비행 장애물은 일회성으로 가로지르므로 무한 스크롤에 묶이지 않지만, 구조상 rowScrollWidth를 제공합니다.
-                GameObject flyingCube = _CreateCube(0, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false, true, startWorldX);
-                CubeFlyingJumpZero jumpZeroComp = flyingCube.GetComponent<CubeFlyingJumpZero>();
-                if (jumpZeroComp != null)
-                {
-                    jumpZeroComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);
-                }
-                m_listCube.Add(flyingCube);
             }
+        }
 
-            // 설정된 주기에 따라 화면 외곽에서 아주 빠른 속도로 가로지르는 비행형 Fast Obstacle 장애물 생성
-            if (y >= 6 && y % 15 == 0)
+        if (minY == int.MaxValue)
+        {
+            Util.MyDestroy(inst);
+            SpawnRandomRow(m_highestGeneratedY, tier);
+            m_highestGeneratedY++;
+            return;
+        }
+
+        int segmentHeight = (maxY - minY) + 1;
+        int startY = m_highestGeneratedY;
+        float rowScrollWidth = (tier.maxSpawnX - tier.minSpawnX) * m_fCubeSize;
+
+        // 3. 복제 타일맵에서 3D 큐브/코인 번역 소환 및 양끝 벽 소환
+        for (int yOffset = 0; yOffset < segmentHeight; yOffset++)
+        {
+            int currentY = startY + yOffset;
+
+            // 가로폭을 고려하여 양쪽 끝에 무조건 고정 경계 벽 기둥 스폰
+            m_listCube.Add(_CreateCube(tier.minSpawnX + 1, currentY, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
+            m_listCube.Add(_CreateCube(tier.maxSpawnX + 1, currentY, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
+
+            // 타일맵들을 훑으며 해당 yOffset 고도의 타일 매핑
+            foreach (Tilemap tm in tilemaps)
             {
-                hasObstacle = true;
+                BoundsInt bounds = tm.cellBounds;
+                int sourceTileY = minY + yOffset;
 
-                GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
-                float playerWorldX = 0f;
-                if (playerGo != null)
+                for (int tx = bounds.xMin; tx <= bounds.xMax; tx++)
                 {
-                    playerWorldX = playerGo.transform.position.x;
-                }
-
-                // 무작위로 왼쪽 -> 오른쪽 또는 오른쪽 -> 왼쪽으로 날아오도록 설정
-                bool flyRight = Random.value > 0.5f;
-                // 화면 밖 스폰 위치 계산
-                float startWorldX = flyRight ? (playerWorldX - 35.0f) : (playerWorldX + 35.0f);
-                // 속도는 일반 비행 장애물 최대 속도의 약 1.8배 ~ 2.5배로 빠르게 설정
-                float speedMultiplier = Random.Range(1.8f, 2.5f);
-                float speedVal = maxFlySpeed * speedMultiplier;
-                if (speedVal < 15f) speedVal = 15f; // 너무 느리지 않게 최소 한계 지정
-                float finalSpeed = flyRight ? speedVal : -speedVal;
-
-                GameObject flyingFastCube = _CreateCube(0, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false, true, startWorldX);
-
-                // _CreateCube에서 자동으로 생성되는 CubeFlyingJumpZero 제거 후 CubeFastObstacle 추가
-
-                CubeFlyingJumpZero tempComp = flyingFastCube.GetComponent<CubeFlyingJumpZero>();
-                if (tempComp != null)
-                {
-                    Util.MyDestroy(tempComp);
-                }
-
-
-                CubeFastObstacle fastObstComp = flyingFastCube.AddComponent<CubeFastObstacle>();
-                if (fastObstComp != null)
-                {
-                    fastObstComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);
-                }
-
-                // 시각적으로 구분되도록 주황색(오렌지색)으로 틴트
-
-                Renderer rendFast = flyingFastCube.GetComponent<Renderer>();
-                if (rendFast != null)
-                {
-                    rendFast.sharedMaterial = GetSharedMaterial(9);
-                }
-
-                m_listCube.Add(flyingFastCube);
-            }
-
-            // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰)
-            if (y >= 3 && !hasObstacle)
-            {
-                if (coinInt > 0)
-                {
-                    if (y % coinInt < coinSeq)
+                    Vector3Int tilePos = new Vector3Int(tx, sourceTileY, 0);
+                    if (tm.HasTile(tilePos))
                     {
-                        int randomX = Random.Range(minX + 2, maxX + 1);
-                        m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
-                    }
-                }
-                else
-                {
-                    int spawnCount = 2 - coinInt; // 0일 때 2개, -1일 때 3개...
-                    List<int> availableX = new List<int>();
-                    for (int sx = minX + 2; sx <= maxX + 1; sx++)
-                    {
-                        availableX.Add(sx);
-                    }
+                        TileBase tile = tm.GetTile(tilePos);
+                        if (tile != null)
+                        {
+                            string tileName = tile.name.ToLower();
+                            eMapProp prop = eMapProp.eMapProp_None;
+                            bool isCoin = false;
 
-                    for (int i = 0; i < spawnCount && availableX.Count > 0; i++)
-                    {
-                        int randomIndex = Random.Range(0, availableX.Count);
-                        int randomX = availableX[randomIndex];
-                        availableX.RemoveAt(randomIndex);
+                            if (tileName.Contains("normal")) prop = eMapProp.eMapProp_Normal;
+                            else if (tileName.Contains("break")) prop = eMapProp.eMapProp_Break;
+                            else if (tileName.Contains("movex")) prop = eMapProp.eMapProp_MoveX;
+                            else if (tileName.Contains("movey")) prop = eMapProp.eMapProp_MoveY;
+                            else if (tileName.Contains("jumpzero")) prop = eMapProp.eMapProp_JumpZero;
+                            else if (tileName.Contains("blink")) prop = eMapProp.eMapProp_Blink;
+                            else if (tileName.Contains("coin")) isCoin = true;
 
-                        m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                            if (isCoin)
+                            {
+                                m_listCoin.Add(_CreateCoin(tx, currentY, rowScrollWidth));
+                            }
+                            else if (prop != eMapProp.eMapProp_None)
+                            {
+                                m_listCube.Add(_CreateCube(tx, currentY, prop, rowScrollWidth, false));
+                            }
+                        }
                     }
                 }
             }
         }
-        m_highestGeneratedY = targetY + 1;
+
+        // 4. 전사 완료된 템플릿 오브젝트 즉각 메모리 해제 및 고도 정방향 갱신
+        Util.MyDestroy(inst);
+        m_highestGeneratedY = startY + segmentHeight;
+    }
+
+    private void SpawnRandomRow(int y, DifficultyTier tier)
+    {
+        int minX = tier.minSpawnX;
+        int maxX = tier.maxSpawnX;
+        int staticInterval = tier.staticObstacleInterval;
+        int flyingInterval = tier.flyingObstacleInterval;
+        int coinInt = tier.coinInterval;
+        int coinSeq = tier.coinSequence;
+        float minFlySpeed = tier.minFlyingSpeed;
+        float maxFlySpeed = tier.maxFlyingSpeed;
+
+        float rowScrollWidth = (maxX - minX) * m_fCubeSize;
+
+        // 양쪽 끝 경계선(minX, maxX)에 대칭이 맞도록 기둥 배치
+        m_listCube.Add(_CreateCube(minX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
+        m_listCube.Add(_CreateCube(maxX + 1, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, true));
+
+        bool hasObstacle = false;
+        int blinkInterval = tier.blinkObstacleInterval;
+        int minBlinkY = tier.minBlinkHeight;
+
+        // 난이도 티어에 설정된 조건(최소 높이 및 스폰 주기)에 따라 Blink 장애물 생성
+        if (blinkInterval > 0 && y >= minBlinkY && y % blinkInterval == 0)
+        {
+            hasObstacle = true;
+            int randomX = Random.Range(minX + 2, maxX + 1);
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Blink, rowScrollWidth, false));
+        }
+
+        // 설정된 주기에 따라 기존의 고정형(공중) JumpZero 장애물 생성 (Blink와 겹치지 않게)
+        if (!hasObstacle && y >= 3 && staticInterval > 0 && y % staticInterval == 0)
+        {
+            hasObstacle = true;
+            int randomX = Random.Range(minX + 2, maxX + 1);
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false));
+        }
+
+        // 설정된 주기에 따라 화면 외곽에서 가로지르는 비행형 JumpZero 장애물 생성 (관통함)
+        if (y >= 4 && flyingInterval > 0 && y % flyingInterval == 0)
+        {
+            hasObstacle = true;
+
+            GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
+            float playerWorldX = 0f;
+            if (playerGo != null)
+            {
+                playerWorldX = playerGo.transform.position.x;
+            }
+
+            bool flyRight = Random.value > 0.5f;
+            float startWorldX = flyRight ? (playerWorldX - 35.0f) : (playerWorldX + 35.0f);
+            float speedVal = Random.Range(minFlySpeed, maxFlySpeed);
+            float finalSpeed = flyRight ? speedVal : -speedVal;
+
+            GameObject flyingCube = _CreateCube(0, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false, true, startWorldX);
+            CubeFlyingJumpZero jumpZeroComp = flyingCube.GetComponent<CubeFlyingJumpZero>();
+            if (jumpZeroComp != null)
+            {
+                jumpZeroComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);
+            }
+            m_listCube.Add(flyingCube);
+        }
+
+        // 설정된 주기에 따라 화면 외곽에서 아주 빠른 속도로 가로지르는 비행형 Fast Obstacle 장애물 생성
+        if (y >= 6 && y % 15 == 0)
+        {
+            hasObstacle = true;
+
+            GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
+            float playerWorldX = 0f;
+            if (playerGo != null)
+            {
+                playerWorldX = playerGo.transform.position.x;
+            }
+
+            bool flyRight = Random.value > 0.5f;
+            float startWorldX = flyRight ? (playerWorldX - 35.0f) : (playerWorldX + 35.0f);
+            float speedMultiplier = Random.Range(1.8f, 2.5f);
+            float speedVal = maxFlySpeed * speedMultiplier;
+            if (speedVal < 15f) speedVal = 15f;
+            float finalSpeed = flyRight ? speedVal : -speedVal;
+
+            GameObject flyingFastCube = _CreateCube(0, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false, true, startWorldX);
+
+            CubeFlyingJumpZero tempComp = flyingFastCube.GetComponent<CubeFlyingJumpZero>();
+            if (tempComp != null)
+            {
+                Util.MyDestroy(tempComp);
+            }
+
+            CubeFastObstacle fastObstComp = flyingFastCube.AddComponent<CubeFastObstacle>();
+            if (fastObstComp != null)
+            {
+                fastObstComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);
+            }
+
+            Renderer rendFast = flyingFastCube.GetComponent<Renderer>();
+            if (rendFast != null)
+            {
+                rendFast.sharedMaterial = GetSharedMaterial(9);
+            }
+
+            m_listCube.Add(flyingFastCube);
+        }
+
+        // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰)
+        if (y >= 3 && !hasObstacle)
+        {
+            if (coinInt > 0)
+            {
+                if (y % coinInt < coinSeq)
+                {
+                    int randomX = Random.Range(minX + 2, maxX + 1);
+                    m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                }
+            }
+            else
+            {
+                int spawnCount = 2 - coinInt;
+                List<int> availableX = new List<int>();
+                for (int sx = minX + 2; sx <= maxX + 1; sx++)
+                {
+                    availableX.Add(sx);
+                }
+
+                for (int i = 0; i < spawnCount && availableX.Count > 0; i++)
+                {
+                    int randomIndex = Random.Range(0, availableX.Count);
+                    int randomX = availableX[randomIndex];
+                    availableX.RemoveAt(randomIndex);
+
+                    m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                }
+            }
+        }
     }
 
     private IEnumerator CleanupRoutine_CR()
