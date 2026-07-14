@@ -901,6 +901,7 @@ public class MapManager : MonoBehaviour
                             bool isCoin = false;
 
                             if (tileName.Contains("normal")) prop = eMapProp.eMapProp_Normal;
+                            else if (tileName.Contains("laser")) prop = eMapProp.eMapProp_Laser;
                             else if (tileName.Contains("break")) prop = eMapProp.eMapProp_Break;
                             else if (tileName.Contains("movex")) prop = eMapProp.eMapProp_MoveX;
                             else if (tileName.Contains("movey")) prop = eMapProp.eMapProp_MoveY;

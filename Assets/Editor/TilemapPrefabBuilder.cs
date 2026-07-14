@@ -20,6 +20,7 @@ public class TilemapPrefabBuilder : EditorWindow
 
         // 2. 이름 규격에 맞춘 테스트용 타일 에셋들(ScriptableObject) 생성
         Tile tileNormal = CreateOrGetTile("Tile_Normal", Color.green);
+        Tile tileLaser = CreateOrGetTile("Tile_Laser", new Color(0.9f, 0.1f, 0.6f)); // 핑크/마젠타 빛 레이저 타일 생성
         Tile tileBreak = CreateOrGetTile("Tile_Break", Color.yellow);
         Tile tileMoveX = CreateOrGetTile("Tile_MoveX", Color.blue);
         Tile tileJumpZero = CreateOrGetTile("Tile_JumpZero", Color.red);
@@ -38,10 +39,10 @@ public class TilemapPrefabBuilder : EditorWindow
         tilemapGo.AddComponent<TilemapRenderer>();
 
         // 4. 예시 점프 루트 맵 드로잉 (그리드 페인팅 모사)
-        // Y=0: 기초 안전 발판 배치 (가로 범위)
+        // Y=0: 기초 안전 발판 배치 (가로 범위) -> laser 블럭으로 대체
         for (int x = -5; x <= 5; x++)
         {
-            tilemap.SetTile(new Vector3Int(x, 0, 0), tileNormal);
+            tilemap.SetTile(new Vector3Int(x, 0, 0), tileLaser);
         }
 
         // Y=2: 중간 깨지는 디딤판 배치
