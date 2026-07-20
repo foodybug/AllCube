@@ -17,6 +17,47 @@ public class CubeLaser : MonoBehaviour
         if (rb != null) Destroy(rb);
     }
 
+    private Color GetTextureColor(Texture tex)
+    {
+        if (tex == null) return Color.red;
+
+        string name = tex.name.ToLower();
+        if (name.Contains("enemy_1")) return new Color(0.70f, 0.72f, 0.71f);
+        if (name.Contains("enemy_2")) return new Color(0.75f, 0.72f, 0.70f);
+        if (name.Contains("enemy_3")) return new Color(0.73f, 0.73f, 0.71f);
+        if (name.Contains("enemy_4")) return new Color(0.70f, 0.72f, 0.73f);
+        if (name.Contains("break1")) return new Color(0.84f, 0.84f, 0.84f);
+        if (name.Contains("break2")) return new Color(0.77f, 0.77f, 0.77f);
+        if (name.Contains("1")) return new Color(0.89f, 0.89f, 0.89f);
+        if (name.Contains("2")) return new Color(0.40f, 0.69f, 0.61f);
+        if (name.Contains("3")) return new Color(0.98f, 0.63f, 0.44f);
+        if (name.Contains("4")) return new Color(0.95f, 0.88f, 0.60f);
+        if (name.Contains("5")) return new Color(0.45f, 0.65f, 0.80f);
+        if (name.Contains("6")) return new Color(0.89f, 0.45f, 0.49f);
+
+        return Color.red;
+    }
+
+    private Color GetLaserColor(Renderer rend)
+    {
+        if (rend == null || rend.sharedMaterial == null) return Color.red;
+
+        Material mat = rend.sharedMaterial;
+        Color tintColor = Color.white;
+        if (mat.HasProperty("_Color"))
+        {
+            tintColor = mat.color;
+        }
+
+        Color texColor = Color.white;
+        if (mat.mainTexture != null)
+        {
+            texColor = GetTextureColor(mat.mainTexture);
+        }
+
+        return new Color(texColor.r * tintColor.r, texColor.g * tintColor.g, texColor.b * tintColor.b, texColor.a * tintColor.a);
+    }
+
     void Start()
     {
         // 1. 적대 장애물 재질 입히기 (8번 머티리얼)
@@ -28,8 +69,11 @@ public class CubeLaser : MonoBehaviour
 
         // 2. LineRenderer 컴포넌트 추가
         m_lineRenderer = gameObject.AddComponent<LineRenderer>();
-        m_lineRenderer.startColor = Color.red;
-        m_lineRenderer.endColor = Color.red;
+        
+        Color laserColor = GetLaserColor(rend);
+
+        m_lineRenderer.startColor = laserColor;
+        m_lineRenderer.endColor = laserColor;
         m_lineRenderer.startWidth = 1.0f; // 플레이어 크기만한 최초 두께
         m_lineRenderer.endWidth = 1.0f;
 
@@ -39,7 +83,7 @@ public class CubeLaser : MonoBehaviour
         if (bgShader != null)
         {
             m_lineRenderer.material = new Material(bgShader);
-            m_lineRenderer.material.color = Color.red;
+            m_lineRenderer.material.color = laserColor;
         }
 
         // 3. 타겟팅할 플레이어 최초 위치 획득
