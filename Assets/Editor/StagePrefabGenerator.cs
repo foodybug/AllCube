@@ -82,25 +82,24 @@ public class StagePrefabGenerator : EditorWindow
                 }
 
                 if (list != null && list.Count > 0)
+                {
+                    tierCount = list.Count;
+                    minSpawnXList.Clear();
+                    maxSpawnXList.Clear();
+
+                    for (int i = 0; i < list.Count; i++)
                     {
-                        tierCount = list.Count;
-                        minSpawnXList.Clear();
-                        maxSpawnXList.Clear();
+                        object tier = list[i];
+                        System.Reflection.FieldInfo minXField = tier.GetType().GetField("minSpawnX");
+                        System.Reflection.FieldInfo maxXField = tier.GetType().GetField("maxSpawnX");
 
-                        for (int i = 0; i < list.Count; i++)
-                        {
-                            object tier = list[i];
-                            System.Reflection.FieldInfo minXField = tier.GetType().GetField("minSpawnX");
-                            System.Reflection.FieldInfo maxXField = tier.GetType().GetField("maxSpawnX");
+                        int minX = (int)minXField.GetValue(tier);
+                        int maxX = (int)maxXField.GetValue(tier);
 
-                            int minX = (int)minXField.GetValue(tier);
-                            int maxX = (int)maxXField.GetValue(tier);
-
-                            minSpawnXList.Add(minX);
-                            maxSpawnXList.Add(maxX);
-                        }
-                        Debug.Log($"[StagePrefabGenerator] Found MapManager with {tierCount} tiers dynamically via reflection.");
+                        minSpawnXList.Add(minX);
+                        maxSpawnXList.Add(maxX);
                     }
+                    Debug.Log($"[StagePrefabGenerator] Found MapManager with {tierCount} tiers dynamically via reflection.");
                 }
             }
             catch (System.Exception ex)
