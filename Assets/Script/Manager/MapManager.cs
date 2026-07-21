@@ -958,16 +958,23 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(laserCube);
         }
 
-        // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰 - 보석 수량 2배 증가)
+        // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰 - 보석 수량 추가 2배 증가: 총 4개 스폰)
         if (y >= 3 && !hasObstacle)
         {
             if (coinInt > 0)
             {
                 if (y % coinInt < coinSeq)
                 {
-                    for (int c = 0; c < 2; c++)
+                    List<int> availX = new List<int>();
+                    for (int sx = minX + 2; sx <= maxX + 1; sx++)
                     {
-                        int randomX = Random.Range(minX + 2, maxX + 1);
+                        availX.Add(sx);
+                    }
+                    for (int c = 0; c < 4 && availX.Count > 0; c++)
+                    {
+                        int randIdx = Random.Range(0, availX.Count);
+                        int randomX = availX[randIdx];
+                        availX.RemoveAt(randIdx);
                         m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
                     }
                 }

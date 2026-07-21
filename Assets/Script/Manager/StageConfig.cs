@@ -60,8 +60,8 @@ public class StageConfig
                 minBlinkH = minHeight;
             }
 
-            // 코인 생성 간격: 갯수를 2배 늘리기 위해 간격 축소 (1~5칸마다 스폰)
-            int coinInterval = Mathf.Min(5, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(2f, 5f, progress))));
+            // 코인 생성 간격: 갯수를 추가 2배 늘리기 위해 간격 축소 (1~3칸마다 스폰)
+            int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));
             int coinSequence = (i % 5 == 0 && i < 30) ? 2 : 1; // 특정 단계마다 연속 코인 이벤트 부여
 
             // 비행 장애물 이동 속도: 처음 초기값 유지 (4.0f ~ 6.0f)
