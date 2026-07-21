@@ -4,15 +4,22 @@ using System.IO;
 
 public class BuildScript
 {
-    [MenuItem("Build/Build Android APK (Development)", false, 1)]
-    [MenuItem("Tools/Build Android APK (Development)", false, 1)]
+    [MenuItem("Build/Build Android APK (Development Debug)", false, 1)]
+    [MenuItem("Tools/Build Android APK (Development Debug)", false, 1)]
     public static void BuildAndroidAPKDev()
     {
-        PerformAndroidBuild(BuildOptions.Development);
+        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.ConnectWithProfiler);
     }
 
-    [MenuItem("Build/Build Android APK (Release)", false, 2)]
-    [MenuItem("Tools/Build Android APK (Release)", false, 2)]
+    [MenuItem("Build/Build & Run Android APK (Debug)", false, 2)]
+    [MenuItem("Tools/Build & Run Android APK (Debug)", false, 2)]
+    public static void BuildAndRunAndroidAPKDev()
+    {
+        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.AutoRunPlayer);
+    }
+
+    [MenuItem("Build/Build Android APK (Release)", false, 3)]
+    [MenuItem("Tools/Build Android APK (Release)", false, 3)]
     public static void BuildAndroidAPKRelease()
     {
         PerformAndroidBuild(BuildOptions.None);
@@ -20,7 +27,7 @@ public class BuildScript
 
     public static void PerformAndroidBuild()
     {
-        PerformAndroidBuild(BuildOptions.Development);
+        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging);
     }
 
     public static void PerformAndroidBuild(BuildOptions buildOptions)
