@@ -57,11 +57,31 @@ public class StagePrefabGenerator : EditorWindow
         {
             try
             {
-                System.Reflection.FieldInfo field = typeof(MapManager).GetField("m_difficultyTier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field != null)
+                System.Collections.IList list = null;
+                System.Reflection.FieldInfo stageConfigField = typeof(MapManager).GetField("m_stageConfig", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (stageConfigField != null)
                 {
-                    var list = field.GetValue(mapManager) as System.Collections.IList;
-                    if (list != null && list.Count > 0)
+                    object stageConfig = stageConfigField.GetValue(mapManager);
+                    if (stageConfig != null)
+                    {
+                        System.Reflection.FieldInfo tierListField = stageConfig.GetType().GetField("m_difficultyTier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        if (tierListField != null)
+                        {
+                            list = tierListField.GetValue(stageConfig) as System.Collections.IList;
+                        }
+                    }
+                }
+
+                if (list == null || list.Count == 0)
+                {
+                    System.Reflection.FieldInfo field = typeof(MapManager).GetField("m_difficultyTier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        list = field.GetValue(mapManager) as System.Collections.IList;
+                    }
+                }
+
+                if (list != null && list.Count > 0)
                     {
                         tierCount = list.Count;
                         minSpawnXList.Clear();
