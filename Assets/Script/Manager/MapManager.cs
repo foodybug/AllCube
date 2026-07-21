@@ -941,8 +941,8 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(flyingFastCube);
         }
 
-        // 설정된 주기에 따라 화면 외곽에서 타겟팅 경고 레이저를 쏘며 날아오는 CubeLaser 장애물 생성
-        if (y >= 8 && y % 18 == 0)
+        // 설정된 주기에 따라 화면 외곽에서 타겟팅 경고 레이저를 쏘며 날아오는 CubeLaser 장애물 생성 (20단계 = 400m 이상부터 등장)
+        if (y >= 400 && y % 18 == 0)
         {
             GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
             float playerWorldX = 0f;
@@ -958,15 +958,18 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(laserCube);
         }
 
-        // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰)
+        // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰 - 보석 수량 2배 증가)
         if (y >= 3 && !hasObstacle)
         {
             if (coinInt > 0)
             {
                 if (y % coinInt < coinSeq)
                 {
-                    int randomX = Random.Range(minX + 2, maxX + 1);
-                    m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                    for (int c = 0; c < 2; c++)
+                    {
+                        int randomX = Random.Range(minX + 2, maxX + 1);
+                        m_listCoin.Add(_CreateCoin(randomX, y, rowScrollWidth));
+                    }
                 }
             }
             else
