@@ -15,7 +15,6 @@ public struct DifficultyTier
     public int coinSequence;
     public float minFlyingSpeed;
     public float maxFlyingSpeed;
-    public int initialJumps;
     public List<GameObject> segmentPrefabs; // 타일맵 기반 조립식 맵 세그먼트 프리팹 리스트
 }
 
@@ -69,9 +68,6 @@ public class StageConfig
             float minSpeed = 4.0f;
             float maxSpeed = 6.0f;
 
-            // 시작 부여 점프 횟수: 초반 10회 -> 후반 3회로 긴장감 고조
-            int jumps = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(10f, 3f, progress)));
-
             list.Add(new DifficultyTier
             {
                 minHeight = minHeight,
@@ -85,7 +81,6 @@ public class StageConfig
                 coinSequence = coinSequence,
                 minFlyingSpeed = minSpeed,
                 maxFlyingSpeed = maxSpeed,
-                initialJumps = jumps,
                 segmentPrefabs = null
             });
         }
@@ -141,7 +136,6 @@ public class StageConfig
             activeTier.coinSequence = 1;
             activeTier.minFlyingSpeed = 6.0f;
             activeTier.maxFlyingSpeed = 10.0f;
-            activeTier.initialJumps = 10;
             activeTier.segmentPrefabs = null;
         }
 
@@ -186,9 +180,6 @@ public class StageConfig
 
             // coinSequence (코인 연속 스폰 갯수 줄임 -> 덜 나옴, 최소 1)
             activeTier.coinSequence = Mathf.Max(1, activeTier.coinSequence - cycleCount);
-
-            // initialJumps (시작 점프 부여 개수 낮춤, 최소 3)
-            activeTier.initialJumps = Mathf.Max(3, activeTier.initialJumps - cycleCount);
         }
 
         return activeTier;

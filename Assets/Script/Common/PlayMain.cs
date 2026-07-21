@@ -86,7 +86,7 @@ public class PlayMain : MonoBehaviour
         Player playerComp = m_goPlayer.GetComponent<Player>();
         if (playerComp != null)
         {
-            playerComp.ResetJumpCount(MapManager.Instance != null ? MapManager.Instance.InitialJumps : 10);
+            playerComp.ResetJumpCount(10);
         }
 
         Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();

@@ -71,9 +71,6 @@ public class MapManager : MonoBehaviour
     private int m_coinSequence = 1;
     private float m_minFlyingSpeed = 6.0f;
     private float m_maxFlyingSpeed = 10.0f;
-    private int m_initialJumps = 10;
-
-    public int InitialJumps { get { return m_initialJumps; } }
 
     public DifficultyTier GetTierForHeight(int y)
     {
@@ -342,7 +339,6 @@ public class MapManager : MonoBehaviour
         m_coinSequence = config.coinSequence;
         m_minFlyingSpeed = config.minFlyingSpeed;
         m_maxFlyingSpeed = config.maxFlyingSpeed;
-        m_initialJumps = config.initialJumps;
 
         // 무한 스크롤 반복 가로폭을 기둥 사이의 정확한 거리로 동적 계산
         m_scrollWidth = (config.maxSpawnX - config.minSpawnX) * m_fCubeSize;
