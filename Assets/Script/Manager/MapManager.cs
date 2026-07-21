@@ -47,23 +47,7 @@ public class MapManager : MonoBehaviour
     private int m_highestGeneratedY = 0;
     private GameObject m_goFloor;
 
-    [System.Serializable]
-    public struct DifficultyTier
-    {
-        public int minHeight;
-        public int minSpawnX;
-        public int maxSpawnX;
-        public int staticObstacleInterval;
-        public int flyingObstacleInterval;
-        public int blinkObstacleInterval; // Blink 장애물 생성 주기 (0 이면 미생성)
-        public int minBlinkHeight;        // Blink 장애물이 등장하기 시작하는 최소 높이
-        public int coinInterval;
-        public int coinSequence;
-        public float minFlyingSpeed;
-        public float maxFlyingSpeed;
-        public int initialJumps;
-        public List<GameObject> segmentPrefabs; // 타일맵 기반 조립식 맵 세그먼트 프리팹 리스트
-    }
+
 
     [Header("Stage Generation Settings")]
     [SerializeField] private int m_generationAheadRange = 20;

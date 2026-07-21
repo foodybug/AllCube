@@ -2,25 +2,43 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
+public struct DifficultyTier
+{
+    public int minHeight;
+    public int minSpawnX;
+    public int maxSpawnX;
+    public int staticObstacleInterval;
+    public int flyingObstacleInterval;
+    public int blinkObstacleInterval; // Blink 장애물 생성 주기 (0 이면 미생성)
+    public int minBlinkHeight;        // Blink 장애물이 등장하기 시작하는 최소 높이
+    public int coinInterval;
+    public int coinSequence;
+    public float minFlyingSpeed;
+    public float maxFlyingSpeed;
+    public int initialJumps;
+    public List<GameObject> segmentPrefabs; // 타일맵 기반 조립식 맵 세그먼트 프리팹 리스트
+}
+
+[System.Serializable]
 public class StageConfig
 {
     [SerializeField]
-    private List<MapManager.DifficultyTier> m_difficultyTier = new List<MapManager.DifficultyTier>()
+    private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>()
     {
-        new MapManager.DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10, segmentPrefabs = null },
-        new MapManager.DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8, segmentPrefabs = null },
-        new MapManager.DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7, segmentPrefabs = null },
-        new MapManager.DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5, segmentPrefabs = null },
-        new MapManager.DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4, segmentPrefabs = null }
+        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5, segmentPrefabs = null },
+        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4, segmentPrefabs = null }
     };
 
-    public List<MapManager.DifficultyTier> DifficultyTiers
+    public List<DifficultyTier> DifficultyTiers
     {
         get { return m_difficultyTier; }
         set { m_difficultyTier = value; }
     }
 
-    public MapManager.DifficultyTier GetTierForHeight(int y)
+    public DifficultyTier GetTierForHeight(int y)
     {
         // 1. 순환 주기 계산 (마지막 티어의 minHeight와 그 이전 티어의 minHeight 차이 기준)
         int cycleHeight = 100;
@@ -41,7 +59,7 @@ public class StageConfig
         }
 
         // 2. 가상 높이(virtualY) 기준 기본 티어 조회
-        MapManager.DifficultyTier activeTier = new MapManager.DifficultyTier();
+        DifficultyTier activeTier = new DifficultyTier();
         bool found = false;
         int maxMinHeight = -1;
 

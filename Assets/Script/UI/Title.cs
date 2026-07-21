@@ -299,7 +299,7 @@ public class Title : MonoBehaviour
             ui = GetComponent<UI_Title>();
             if (ui == null)
             {
-                ui = FindObjectOfType<UI_Title>();
+                ui = FindFirstObjectByType<UI_Title>();
             }
         }
 
@@ -407,7 +407,7 @@ public class Title : MonoBehaviour
         Color farColor = Color.HSVToRGB(slowTimeHue, 0.5f, 0.28f);
         
         Camera cam = Camera.main;
-        if (cam == null) cam = FindObjectOfType<Camera>();
+        if (cam == null) cam = FindFirstObjectByType<Camera>();
         
         if (cam != null)
         {
@@ -531,7 +531,7 @@ public class Title : MonoBehaviour
         m_goBackgroundContainer.transform.parent = this.transform;
 
         Camera cam = Camera.main;
-        if (cam == null) cam = FindObjectOfType<Camera>();
+        if (cam == null) cam = FindFirstObjectByType<Camera>();
         
         if (cam == null)
         {
@@ -727,7 +727,7 @@ public class Title : MonoBehaviour
         m_playerMaterials.Clear();
 
         Camera cam = Camera.main;
-        if (cam == null) cam = FindObjectOfType<Camera>();
+        if (cam == null) cam = FindFirstObjectByType<Camera>();
         
         if (cam != null)
         {
