@@ -87,15 +87,20 @@ public class MapManager : MonoBehaviour
 
     private void MigrateDifficultyTiers()
     {
-        if (m_difficultyTier != null && m_difficultyTier.Count > 0)
+        if (m_stageConfig == null)
         {
-            if (m_stageConfig == null)
-            {
-                m_stageConfig = new StageConfig();
-            }
-            if (m_stageConfig.DifficultyTiers == null || m_stageConfig.DifficultyTiers.Count == 0)
+            m_stageConfig = new StageConfig();
+        }
+
+        if (m_stageConfig.DifficultyTiers == null || m_stageConfig.DifficultyTiers.Count < 50)
+        {
+            if (m_difficultyTier != null && m_difficultyTier.Count >= 50)
             {
                 m_stageConfig.DifficultyTiers = new List<DifficultyTier>(m_difficultyTier);
+            }
+            else
+            {
+                m_stageConfig.DifficultyTiers = StageConfig.GenerateDefault50Tiers();
             }
         }
     }

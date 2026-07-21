@@ -23,14 +23,7 @@ public struct DifficultyTier
 public class StageConfig
 {
     [SerializeField]
-    private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>()
-    {
-        new DifficultyTier { minHeight = 0, minSpawnX = -30, maxSpawnX = 30, staticObstacleInterval = 10, flyingObstacleInterval = 15, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 3, coinSequence = 1, minFlyingSpeed = 4f, maxFlyingSpeed = 6f, initialJumps = 10, segmentPrefabs = null },
-        new DifficultyTier { minHeight = 20, minSpawnX = -25, maxSpawnX = 25, staticObstacleInterval = 8, flyingObstacleInterval = 12, blinkObstacleInterval = 0, minBlinkHeight = 0, coinInterval = 4, coinSequence = 1, minFlyingSpeed = 6f, maxFlyingSpeed = 8f, initialJumps = 8, segmentPrefabs = null },
-        new DifficultyTier { minHeight = 40, minSpawnX = -20, maxSpawnX = 20, staticObstacleInterval = 6, flyingObstacleInterval = 9, blinkObstacleInterval = 8, minBlinkHeight = 40, coinInterval = 5, coinSequence = 1, minFlyingSpeed = 8f, maxFlyingSpeed = 11f, initialJumps = 7, segmentPrefabs = null },
-        new DifficultyTier { minHeight = 60, minSpawnX = -15, maxSpawnX = 15, staticObstacleInterval = 5, flyingObstacleInterval = 7, blinkObstacleInterval = 6, minBlinkHeight = 60, coinInterval = 6, coinSequence = 1, minFlyingSpeed = 10f, maxFlyingSpeed = 14f, initialJumps = 5, segmentPrefabs = null },
-        new DifficultyTier { minHeight = 80, minSpawnX = -10, maxSpawnX = 10, staticObstacleInterval = 4, flyingObstacleInterval = 5, blinkObstacleInterval = 5, minBlinkHeight = 80, coinInterval = 7, coinSequence = 1, minFlyingSpeed = 12f, maxFlyingSpeed = 18f, initialJumps = 4, segmentPrefabs = null }
-    };
+    private List<DifficultyTier> m_difficultyTier = GenerateDefault50Tiers();
 
     public List<DifficultyTier> DifficultyTiers
     {
@@ -38,10 +31,71 @@ public class StageConfig
         set { m_difficultyTier = value; }
     }
 
+    public static List<DifficultyTier> GenerateDefault50Tiers()
+    {
+        List<DifficultyTier> list = new List<DifficultyTier>();
+        int totalTiers = 50;
+
+        for (int i = 0; i < totalTiers; i++)
+        {
+            float progress = (float)i / (totalTiers - 1); // 0.0 ~ 1.0
+
+            int minHeight = i * 20; // 0, 20, 40, ..., 980
+
+            // 스폰 영역 폭: 초기 [-30, 30] (폭 60) 에서 후반부 [-9, 9] (폭 18) 로 점진 축소
+            int spawnWidth = Mathf.RoundToInt(Mathf.Lerp(30f, 9f, progress));
+            int minSpawnX = -spawnWidth;
+            int maxSpawnX = spawnWidth;
+
+            // 정적 및 비행 장애물 간격: 초반에는 12~16칸 간격, 후반부엔 3~4칸 간격으로 밀도 증가
+            int staticInterval = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(12f, 3f, progress)));
+            int flyingInterval = Mathf.Max(4, Mathf.RoundToInt(Mathf.Lerp(16f, 4f, progress)));
+
+            // 깜빡이 장애물: Tier 8 (높이 160m) 이상부터 최초 등장하며 점점 빈도 증가
+            int blinkInterval = 0;
+            int minBlinkH = 0;
+            if (i >= 8)
+            {
+                float blinkProgress = (float)(i - 8) / (totalTiers - 9);
+                blinkInterval = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(10f, 3f, blinkProgress)));
+                minBlinkH = minHeight;
+            }
+
+            // 코인 생성 간격: 초반 3칸마다 등장 -> 후반 9칸마다 희귀하게 등장
+            int coinInterval = Mathf.Min(9, Mathf.RoundToInt(Mathf.Lerp(3f, 9f, progress)));
+            int coinSequence = (i % 5 == 0 && i < 30) ? 2 : 1; // 특정 단계마다 연속 코인 이벤트 부여
+
+            // 비행 장애물 이동 속도: 초반 4~6 -> 후반 15~22 로 가속
+            float minSpeed = Mathf.Lerp(4.0f, 15.0f, progress);
+            float maxSpeed = Mathf.Lerp(6.0f, 22.0f, progress);
+
+            // 시작 부여 점프 횟수: 초반 10회 -> 후반 3회로 긴장감 고조
+            int jumps = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(10f, 3f, progress)));
+
+            list.Add(new DifficultyTier
+            {
+                minHeight = minHeight,
+                minSpawnX = minSpawnX,
+                maxSpawnX = maxSpawnX,
+                staticObstacleInterval = staticInterval,
+                flyingObstacleInterval = flyingInterval,
+                blinkObstacleInterval = blinkInterval,
+                minBlinkHeight = minBlinkH,
+                coinInterval = coinInterval,
+                coinSequence = coinSequence,
+                minFlyingSpeed = minSpeed,
+                maxFlyingSpeed = maxSpeed,
+                initialJumps = jumps,
+                segmentPrefabs = null
+            });
+        }
+        return list;
+    }
+
     public DifficultyTier GetTierForHeight(int y)
     {
         // 1. 순환 주기 계산 (마지막 티어의 minHeight와 그 이전 티어의 minHeight 차이 기준)
-        int cycleHeight = 100;
+        int cycleHeight = 1000;
         int count = m_difficultyTier.Count;
         if (count > 1)
         {
@@ -81,7 +135,7 @@ public class StageConfig
             activeTier.maxSpawnX = 30;
             activeTier.staticObstacleInterval = 5;
             activeTier.flyingObstacleInterval = 8;
-            activeTier.blinkObstacleInterval = 0; // 기본 비활성
+            activeTier.blinkObstacleInterval = 0;
             activeTier.minBlinkHeight = 0;
             activeTier.coinInterval = 3;
             activeTier.coinSequence = 1;
