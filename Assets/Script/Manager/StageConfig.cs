@@ -65,9 +65,9 @@ public class StageConfig
             int coinInterval = Mathf.Min(9, Mathf.RoundToInt(Mathf.Lerp(3f, 9f, progress)));
             int coinSequence = (i % 5 == 0 && i < 30) ? 2 : 1; // 특정 단계마다 연속 코인 이벤트 부여
 
-            // 비행 장애물 이동 속도: 초반 4~6 -> 후반 15~22 로 가속
-            float minSpeed = Mathf.Lerp(4.0f, 15.0f, progress);
-            float maxSpeed = Mathf.Lerp(6.0f, 22.0f, progress);
+            // 비행 장애물 이동 속도: 처음 초기값 유지 (4.0f ~ 6.0f)
+            float minSpeed = 4.0f;
+            float maxSpeed = 6.0f;
 
             // 시작 부여 점프 횟수: 초반 10회 -> 후반 3회로 긴장감 고조
             int jumps = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(10f, 3f, progress)));
@@ -161,9 +161,7 @@ public class StageConfig
                 activeTier.blinkObstacleInterval = Mathf.Max(2, activeTier.blinkObstacleInterval - cycleCount);
             }
 
-            // 비행 장애물 속도 증가 (순환당 1.5f씩 상승)
-            activeTier.minFlyingSpeed += cycleCount * 1.5f;
-            activeTier.maxFlyingSpeed += cycleCount * 1.5f;
+            // 비행 장애물 속도는 초반 초기값(4.0f ~ 6.0f)으로 고정 유지
 
             // 좌우 스폰 폭 좁히기 (순환당 좌우 1칸씩 좁힘 -> 기둥 간격 좁아져 위협 상승)
             // 단, 너무 좁아져 진행이 불가하지 않도록 최소 가로폭 10 유지
