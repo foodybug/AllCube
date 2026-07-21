@@ -4,9 +4,28 @@ using System.IO;
 
 public class BuildScript
 {
+    [MenuItem("Build/Build Android APK (Development)", false, 1)]
+    [MenuItem("Tools/Build Android APK (Development)", false, 1)]
+    public static void BuildAndroidAPKDev()
+    {
+        PerformAndroidBuild(BuildOptions.Development);
+    }
+
+    [MenuItem("Build/Build Android APK (Release)", false, 2)]
+    [MenuItem("Tools/Build Android APK (Release)", false, 2)]
+    public static void BuildAndroidAPKRelease()
+    {
+        PerformAndroidBuild(BuildOptions.None);
+    }
+
     public static void PerformAndroidBuild()
     {
-        Debug.Log("[BuildScript] Starting Android Build...");
+        PerformAndroidBuild(BuildOptions.Development);
+    }
+
+    public static void PerformAndroidBuild(BuildOptions buildOptions)
+    {
+        Debug.Log($"[BuildScript] Starting Android Build ({buildOptions})...");
 
         // 안드로이드 패키지 명(Application Identifier) 및 버전 코드 자동 세팅
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.foodybug.allcube");
@@ -21,7 +40,6 @@ public class BuildScript
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
 
-        
         // 빌드 대상 씬 목록 가져오기
         EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
         string[] scenePaths = new string[scenes.Length];
@@ -37,17 +55,28 @@ public class BuildScript
         {
             Directory.CreateDirectory(buildDirectory);
         }
-        string buildPath = Path.Combine(buildDirectory, "AllCube.apk");
+        string buildFileName = buildOptions.HasFlag(BuildOptions.Development) ? "AllCube_Dev.apk" : "AllCube.apk";
+        string buildPath = Path.Combine(buildDirectory, buildFileName);
 
-        // 빌드 옵션 구성 (테스트 실기기 설치 호환성을 위해 개발용 디버그 빌드로 지정)
+        // 빌드 옵션 구성
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
         buildPlayerOptions.scenes = scenePaths;
         buildPlayerOptions.locationPathName = buildPath;
         buildPlayerOptions.target = BuildTarget.Android;
-        buildPlayerOptions.options = BuildOptions.Development;
+        buildPlayerOptions.options = buildOptions;
 
         // 안드로이드 빌드 파이프라인 기동
-        BuildPipeline.BuildPlayer(buildPlayerOptions);
-        Debug.Log("[BuildScript] Android Build Completed successfully!");
+        var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
+        if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
+        {
+            Debug.Log($"[BuildScript] Android Build Completed successfully! Saved to: {buildPath}");
+            EditorUtility.RevealInFinder(buildPath);
+            EditorUtility.DisplayDialog("Android Build", $"안드로이드 APK 빌드가 성공적으로 완료되었습니다!\n\n저장 위치: {buildPath}", "확인");
+        }
+        else
+        {
+            Debug.LogError($"[BuildScript] Android Build Failed! Result: {report.summary.result}");
+            EditorUtility.DisplayDialog("Android Build Error", $"안드로이드 APK 빌드 중 오류가 발생했습니다.\n\n결과: {report.summary.result}", "확인");
+        }
     }
 }
