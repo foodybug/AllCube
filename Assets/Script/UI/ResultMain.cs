@@ -463,7 +463,7 @@ public class ResultMain : MonoBehaviour
         }
 
         // 1. 원경 Quad
-        GameObject goFar = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        GameObject goFar = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
         goFar.name = "Far_Background_Quad";
         goFar.transform.parent = cameraT;
         goFar.transform.localPosition = new Vector3(0f, 0f, 120f);
@@ -500,7 +500,7 @@ public class ResultMain : MonoBehaviour
             for (int c = 0; c < cols; c++)
             {
                 int index = r * cols + c;
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                GameObject go = PrimitiveUtil.CreatePrimitive(PrimitiveType.Cube);
                 go.name = "Background_ParallaxCube_" + index;
                 go.transform.parent = m_goBackgroundContainer.transform;
 

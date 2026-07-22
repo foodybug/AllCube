@@ -573,7 +573,7 @@ public class Title : MonoBehaviour
         }
 
         // 1. 원경 Quad
-        GameObject goFar = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        GameObject goFar = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
         goFar.name = "Far_Background_Quad";
         goFar.transform.parent = cameraT;
         goFar.transform.localPosition = new Vector3(0f, 0f, 120f);
@@ -610,7 +610,7 @@ public class Title : MonoBehaviour
             for (int c = 0; c < cols; c++)
             {
                 int index = r * cols + c;
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                GameObject go = PrimitiveUtil.CreatePrimitive(PrimitiveType.Cube);
                 go.name = "Background_ParallaxCube_" + index;
                 go.transform.parent = m_goBackgroundContainer.transform;
 
@@ -644,7 +644,7 @@ public class Title : MonoBehaviour
         Texture playerTexOff = Resources.Load("Player/texPlayerOff") as Texture;
         for (int i = 0; i < 5; i++)
         {
-            GameObject pGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject pGo = PrimitiveUtil.CreatePrimitive(PrimitiveType.Cube);
             pGo.name = "Title_Rhythmic_Player_" + i;
             pGo.transform.parent = m_goBackgroundContainer.transform;
 

@@ -369,7 +369,7 @@ public class MapManager : MonoBehaviour
     {
         if (m_goFloor == null)
         {
-            m_goFloor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            m_goFloor = PrimitiveUtil.CreatePrimitive(PrimitiveType.Cube);
             m_goFloor.name = "Floor_DeadZone";
 
             Renderer rend = m_goFloor.GetComponent<Renderer>();
@@ -529,13 +529,7 @@ public class MapManager : MonoBehaviour
         MeshFilter mf = go.GetComponentInChildren<MeshFilter>();
         if (mf != null)
         {
-            GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            MeshFilter tempMf = tempCube.GetComponent<MeshFilter>();
-            if (tempMf != null)
-            {
-                mf.sharedMesh = tempMf.sharedMesh;
-            }
-            Util.MyDestroy(tempCube);
+            mf.sharedMesh = PrimitiveUtil.GetCubeMesh();
         }
 
         // Coin 컴포넌트 부착 및 등급(grade 1~5) 무작위 부여
@@ -1132,7 +1126,7 @@ public class MapManager : MonoBehaviour
         }
 
         // 1. 원경 Quad (Far Background Sky)
-        GameObject goFar = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        GameObject goFar = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
         goFar.name = "Far_Background_Quad";
         goFar.transform.parent = cameraT;
         goFar.transform.localPosition = new Vector3(0f, 0f, 100f); // Z=100 (중경 큐브 가려짐 방지를 위해 원경을 뒤로 대폭 배치)
@@ -1161,7 +1155,7 @@ public class MapManager : MonoBehaviour
             for (int c = 0; c < farCols; c++)
             {
                 int index = r * farCols + c;
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                GameObject go = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
                 go.name = "Background_FarCube_" + index;
                 go.transform.parent = m_goBackgroundContainer.transform;
 
@@ -1205,7 +1199,7 @@ public class MapManager : MonoBehaviour
             for (int c = 0; c < cols; c++)
             {
                 int index = r * cols + c;
-                GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad); // 3D Cube 대신 2D Quad로 전환하여 프레임 대폭 상승
+                GameObject go = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad); // 3D Cube 대신 2D Quad로 전환하여 프레임 대폭 상승
                 go.name = "Background_MidCube_" + index;
                 go.transform.parent = m_goBackgroundContainer.transform;
 
