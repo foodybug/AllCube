@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class InGameDebugConsole : MonoBehaviour
 {
+    [System.Serializable]
     private struct LogEntry
     {
         public string message;
