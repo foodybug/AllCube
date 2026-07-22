@@ -72,6 +72,12 @@ public class PlayMain : MonoBehaviour
             MainManager.Instance.nCurLevel = nLevel;
         }
 
+        // Play 씬 하단 구글 배너 광고 노출
+        if (AdmobManager.Instance != null)
+        {
+            AdmobManager.Instance.Show();
+        }
+
         if (MapManager.Instance != null)
         {
             MapManager.Instance.ApplyLevelConfig(nLevel);

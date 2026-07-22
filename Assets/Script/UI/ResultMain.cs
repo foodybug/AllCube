@@ -60,6 +60,12 @@ public class ResultMain : MonoBehaviour
 
         CreateBackground();
 
+        // Result 씬 하단 구글 배너 광고 노출
+        if (AdmobManager.Instance != null)
+        {
+            AdmobManager.Instance.Show();
+        }
+
         StartCoroutine(SubmitAndRefreshUI_CR());
     }
 
