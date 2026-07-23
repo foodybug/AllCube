@@ -31,7 +31,7 @@ public class RhythmicPlayerCube : MonoBehaviour
 
         m_renderer = GetComponent<Renderer>();
 
-        // 큐브 간 물리 충돌로 인한 덜덜 떨림 현상 완전 방지 (Collider 제거 또는 Trigger 유지)
+        // 큐브 간 물리 충돌로 인한 덜덜 떨림 현상 완전 방지 (Collider 제거)
         Collider col = GetComponent<Collider>();
         if (col != null)
         {
@@ -49,7 +49,7 @@ public class RhythmicPlayerCube : MonoBehaviour
             m_rb = gameObject.AddComponent<Rigidbody>();
         }
         m_rb.useGravity = true;
-        m_rb.isKinematic = true; // 리스폰 대기 중 PhysX 충돌 떨림 방지
+        m_rb.isKinematic = false;
         m_rb.mass = 1.0f;
         m_rb.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
         m_rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -64,13 +64,13 @@ public class RhythmicPlayerCube : MonoBehaviour
 
     private void ResetParams(float startX, float startY, bool isInitialSpawn)
     {
-        // 위치 재배치 중 PhysX 겹침 떨림 방지를 위해 Kinematic 활성화
         if (m_rb != null)
         {
-            m_rb.isKinematic = true;
-            m_rb.useGravity = true;
+            m_rb.isKinematic = false; // velocity 설정 전 kinematic 해제 (경고 방지)
             m_rb.linearVelocity = Vector3.zero;
             m_rb.angularVelocity = Vector3.zero;
+            m_rb.isKinematic = true;  // 재배치 대기 중 PhysX 충돌 떨림 방지
+            m_rb.useGravity = true;
         }
 
         transform.position = new Vector3(startX, startY, transform.position.z);
