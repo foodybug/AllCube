@@ -418,7 +418,8 @@ public class ResultMain : MonoBehaviour
         ClearBackground();
 
         m_goBackgroundContainer = new GameObject("BackgroundContainer");
-        m_goBackgroundContainer.transform.parent = this.transform;
+        m_goBackgroundContainer.transform.parent = null;
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(m_goBackgroundContainer, UnityEngine.SceneManagement.SceneManager.GetActiveScene());
 
         Camera cam = Camera.main;
         if (cam == null) cam = FindFirstObjectByType<Camera>();
