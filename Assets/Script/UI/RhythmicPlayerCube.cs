@@ -81,7 +81,7 @@ public class RhythmicPlayerCube : MonoBehaviour
         }
         else
         {
-            m_jumpTimer = Random.Range(0f, m_jumpInterval * 0.5f); // 리스폰 복귀 시에도 자연스러운 대기 적용
+            m_jumpTimer = m_jumpInterval; // 화면 밖 리스폰 복귀 시에는 즉각적 점프 격발!
         }
     }
 
@@ -112,18 +112,23 @@ public class RhythmicPlayerCube : MonoBehaviour
             ExecuteJump();
         }
 
-        // 3. 카메라 Viewport 렌더링 영역 외곽 하단 이탈 감지 및 상단 리스폰 순환 처리
+        // 3. 카메라 Frustum(절두체) 뷰포트 외곽 이탈 감지 및 무한 순환 리스폰
         if (m_camera != null)
         {
             Vector3 pos = transform.position;
             Vector3 viewportPos = m_camera.WorldToViewportPoint(pos);
 
-            // 화면 하단(-0.35f 이하)으로 떨어진 경우 상단 위로 순환 리스폰
-            if (viewportPos.y < -0.35f || viewportPos.z < 0f)
+            // 화면 위(1.15f 이상)로 솟구쳐 나가거나, 하단(-0.25f 이하), 또는 좌우 외곽(-0.15f / 1.15f)으로 나간 경우
+            if (viewportPos.y > 1.15f || viewportPos.y < -0.25f || viewportPos.x < -0.15f || viewportPos.x > 1.15f || viewportPos.z < 0f)
             {
+                // [중앙 로고 가림 방지 - 뷰포트 좌우 날개 가장자리 영역 지정]
                 bool spawnOnLeft = (Random.value > 0.5f);
-                float targetViewportX = spawnOnLeft ? Random.Range(0.02f, 0.28f) : Random.Range(0.72f, 0.98f);
-                float targetViewportY = Random.Range(1.10f, 1.35f); // 화면 상단 위 영역
+                float targetViewportX = spawnOnLeft 
+                    ? Random.Range(0.01f, 0.26f) 
+                    : Random.Range(0.74f, 0.99f);
+
+                // 화면 아래(-0.25f)에서 다시 위로 솟구치도록 하단 리스폰 위치 지정
+                float targetViewportY = -0.25f;
                 float targetZ = Random.Range(6.0f, 8.5f);
 
                 Vector3 spawnWorldPos = m_camera.ViewportToWorldPoint(new Vector3(targetViewportX, targetViewportY, targetZ));
@@ -133,9 +138,9 @@ public class RhythmicPlayerCube : MonoBehaviour
         else if (m_cameraTransform != null)
         {
             float camY = m_cameraTransform.position.y;
-            if (transform.position.y < camY - 50f)
+            if (transform.position.y > camY + 45f || transform.position.y < camY - 45f)
             {
-                float newY = camY + Random.Range(35f, 48f);
+                float newY = camY - Random.Range(15f, 25f);
                 float newX = Random.Range(-20f, 20f);
                 ResetParams(newX, newY, false);
             }
