@@ -62,7 +62,7 @@ public class BuildScript
         {
             Directory.CreateDirectory(buildDirectory);
         }
-        string buildFileName = buildOptions.HasFlag(BuildOptions.Development) ? "AllCube_Dev.apk" : "AllCube.apk";
+        string buildFileName = "AllCube.apk";
         string buildPath = Path.Combine(buildDirectory, buildFileName);
 
         // 빌드 옵션 구성
