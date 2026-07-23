@@ -31,6 +31,13 @@ public class RhythmicPlayerCube : MonoBehaviour
 
         m_renderer = GetComponent<Renderer>();
 
+        // 큐브 간 물리 충돌로 인한 덜덜 떨림 현상 완전 방지 (Collider 제거 또는 Trigger 유지)
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            Destroy(col);
+        }
+
         // 실제 인게임 플레이어 전용 On/Off 텍스처 리소스 로드
         m_texOn = Resources.Load("Player/texPlayerOn") as Texture;
         m_texOff = Resources.Load("Player/texPlayerOff") as Texture;
@@ -41,7 +48,8 @@ public class RhythmicPlayerCube : MonoBehaviour
         {
             m_rb = gameObject.AddComponent<Rigidbody>();
         }
-        m_rb.useGravity = true; // 항상 중력 ON 유지 (자연스러운 물리 낙하 및 포물선 점프 보장)
+        m_rb.useGravity = true;
+        m_rb.isKinematic = true; // 리스폰 대기 중 PhysX 충돌 떨림 방지
         m_rb.mass = 1.0f;
         m_rb.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
         m_rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -56,10 +64,12 @@ public class RhythmicPlayerCube : MonoBehaviour
 
     private void ResetParams(float startX, float startY, bool isInitialSpawn)
     {
+        // 위치 재배치 중 PhysX 겹침 떨림 방지를 위해 Kinematic 활성화
         if (m_rb != null)
         {
-            m_rb.useGravity = true; // 중력 항시 ON 유지
-            m_rb.linearVelocity = new Vector3(0f, 3.6f, 0f);
+            m_rb.isKinematic = true;
+            m_rb.useGravity = true;
+            m_rb.linearVelocity = Vector3.zero;
             m_rb.angularVelocity = Vector3.zero;
         }
 
@@ -149,7 +159,8 @@ public class RhythmicPlayerCube : MonoBehaviour
     private void ExecuteJump()
     {
         if (m_rb == null) return;
-        m_rb.useGravity = true; // 중력 항시 유지
+        m_rb.isKinematic = false; // 도약 격발 시 Kinematic 해제하여 물리 운동 가동!
+        m_rb.useGravity = true;
 
         m_rb.linearVelocity = new Vector3(0f, 3.6f, 0f);
         m_rb.angularVelocity = Vector3.zero;
