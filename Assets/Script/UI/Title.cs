@@ -327,56 +327,80 @@ public class Title : MonoBehaviour
 
     private void Initialize()
     {
-        if (MainManager.Instance == null)
+        try
         {
-            MainManager[] inactiveMain = Resources.FindObjectsOfTypeAll<MainManager>();
-            if (inactiveMain != null && inactiveMain.Length > 0)
+            if (MainManager.Instance == null)
             {
-                if (inactiveMain[0].gameObject.scene.isLoaded)
+                MainManager[] inactiveMain = Resources.FindObjectsOfTypeAll<MainManager>();
+                if (inactiveMain != null && inactiveMain.Length > 0)
                 {
-                    Debug.Log("[Title Debug] Found inactive MainManager in scene. Forcing Active!");
-                    inactiveMain[0].gameObject.SetActive(true);
+                    if (inactiveMain[0].gameObject.scene.isLoaded)
+                    {
+                        Debug.Log("[Title Debug] Found inactive MainManager in scene. Forcing Active!");
+                        inactiveMain[0].gameObject.SetActive(true);
+                    }
                 }
             }
-        }
 
-        if (MainManager.Instance == null) return;
+            if (MainManager.Instance == null) return;
 
-        Debug.Log("[Title Debug] Initialize active. MainManager.Instance is now valid.");
-        MainManager.Instance.eCurState = eGameState.eGameState_Logo;
-        CameraManager.Instance.Init();
-        
-        if (ui != null)
-        {
-            if (ui.texLogo != null) ui.texLogo.gameObject.SetActive(true);
-            if (ui.textTouchScreen != null) ui.textTouchScreen.gameObject.SetActive(true);
-            if (ui.goBtnSound != null) ui.goBtnSound.SetActive(true);
+            Debug.Log("[Title Debug] Step 1: Initialize active. MainManager.Instance is valid.");
+            MainManager.Instance.eCurState = eGameState.eGameState_Logo;
 
-            if (ui.btnSound != null)
+            Debug.Log("[Title Debug] Step 2: Checking CameraManager...");
+            if (CameraManager.Instance != null)
             {
-                ui.btnSound.onClick.RemoveAllListeners();
-                ui.btnSound.onClick.AddListener(OnBtnSoundClicked);
+                CameraManager.Instance.Init();
+            }
+            else
+            {
+                Debug.LogWarning("[Title Debug] CameraManager.Instance is null! Searching in scene...");
+                CameraManager camMgr = FindFirstObjectByType<CameraManager>();
+                if (camMgr != null)
+                {
+                    camMgr.Init();
+                }
             }
 
-            RefreshSoundButtonIcon();
-        }
-
-        if (MainManager.StartInLevelSelect)
-        {
-            MainManager.StartInLevelSelect = false;
-            MainManager.Instance.eCurState = eGameState.eGameState_Select;
-            
+            Debug.Log("[Title Debug] Step 3: Configuring Title UI elements...");
             if (ui != null)
             {
-                if (ui.textTouchScreen != null) ui.textTouchScreen.gameObject.SetActive(false);
-                if (ui.texLogo != null) ui.texLogo.gameObject.SetActive(false);
+                if (ui.texLogo != null && ui.texLogo.gameObject != null) ui.texLogo.gameObject.SetActive(true);
+                if (ui.textTouchScreen != null && ui.textTouchScreen.gameObject != null) ui.textTouchScreen.gameObject.SetActive(true);
                 if (ui.goBtnSound != null) ui.goBtnSound.SetActive(true);
+
+                if (ui.btnSound != null)
+                {
+                    ui.btnSound.onClick.RemoveAllListeners();
+                    ui.btnSound.onClick.AddListener(OnBtnSoundClicked);
+                }
+
+                RefreshSoundButtonIcon();
             }
 
-            MainManager.Instance.GoLevelSelectScene();
-        }
+            Debug.Log("[Title Debug] Step 4: Checking LevelSelect state...");
+            if (MainManager.StartInLevelSelect)
+            {
+                MainManager.StartInLevelSelect = false;
+                MainManager.Instance.eCurState = eGameState.eGameState_Select;
 
-        m_bInitialized = true;
+                if (ui != null)
+                {
+                    if (ui.textTouchScreen != null && ui.textTouchScreen.gameObject != null) ui.textTouchScreen.gameObject.SetActive(false);
+                    if (ui.texLogo != null && ui.texLogo.gameObject != null) ui.texLogo.gameObject.SetActive(false);
+                    if (ui.goBtnSound != null) ui.goBtnSound.SetActive(true);
+                }
+
+                MainManager.Instance.GoLevelSelectScene();
+            }
+
+            m_bInitialized = true;
+            Debug.Log("[Title Debug] Step 5: Title Initialization completed successfully.");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[Title Debug] Exception in Initialize(): {ex.Message}\n{ex.StackTrace}");
+        }
     }
 
     void Update()
