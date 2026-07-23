@@ -1242,15 +1242,14 @@ public class MapManager : MonoBehaviour
         // 1. 기존 컨테이너 변수 즉시 파괴 (지연 파괴 중복 방지)
         if (m_goBackgroundContainer != null)
         {
-            DestroyImmediate(m_goBackgroundContainer);
+            Destroy(m_goBackgroundContainer);
             m_goBackgroundContainer = null;
         }
 
-        // 2. 부모 자식 트리 구조 하위의 BackgroundContainer 추가적 완벽 검색 소거
         Transform childContainer = this.transform.Find("BackgroundContainer");
         if (childContainer != null)
         {
-            DestroyImmediate(childContainer.gameObject);
+            Destroy(childContainer.gameObject);
         }
 
         if (CameraManager.Instance != null && CameraManager.Instance.mainCamera != null)

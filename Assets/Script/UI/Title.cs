@@ -29,7 +29,7 @@ public class Title : MonoBehaviour
         {
             Debug.LogWarning($"[Title Duplication Clean] Multiple Title components detected! Destroying duplicate on {gameObject.name}");
             m_bDestroyed = true;
-            DestroyImmediate(this);
+            Destroy(this);
             return;
         }
         s_Instance = this;
@@ -461,27 +461,24 @@ public class Title : MonoBehaviour
     {
         m_parallaxObjects.Clear();
 
-        // 1. 기존 컨테이너 변수 즉시 파괴 (지연 파괴 Jitter 방지)
         if (m_goBackgroundContainer != null)
         {
-            DestroyImmediate(m_goBackgroundContainer);
+            Destroy(m_goBackgroundContainer);
             m_goBackgroundContainer = null;
         }
 
-        // 2. 부모 자식 트리 구조 하위의 BackgroundContainer 추가적 완벽 검색 소거
         Transform childContainer = this.transform.Find("BackgroundContainer");
         if (childContainer != null)
         {
-            DestroyImmediate(childContainer.gameObject);
+            Destroy(childContainer.gameObject);
         }
 
-        // 3. 지그재그 플레이어 복제본들 즉각 청소
         int playerCount = m_playerObjects.Count;
         for (int i = 0; i < playerCount; i++)
         {
             if (m_playerObjects[i] != null)
             {
-                DestroyImmediate(m_playerObjects[i]);
+                Destroy(m_playerObjects[i]);
             }
         }
         m_playerObjects.Clear();
@@ -491,7 +488,7 @@ public class Title : MonoBehaviour
         {
             if (m_playerMaterials[i] != null)
             {
-                DestroyImmediate(m_playerMaterials[i]);
+                Destroy(m_playerMaterials[i]);
             }
         }
         m_playerMaterials.Clear();
@@ -504,7 +501,7 @@ public class Title : MonoBehaviour
             Transform farBg = cam.transform.Find("Far_Background_Quad");
             if (farBg != null)
             {
-                DestroyImmediate(farBg.gameObject);
+                Destroy(farBg.gameObject);
             }
         }
 

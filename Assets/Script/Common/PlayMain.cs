@@ -63,61 +63,90 @@ public class PlayMain : MonoBehaviour
 
     public void SetupPlayStage(int nLevel)
     {
-        Debug.Log("[PlayMain Debug] SetupPlayStage called. Level: " + nLevel);
-        m_isGameStarted = false;
-
-        if (MainManager.Instance != null)
+        try
         {
-            MainManager.Instance.eCurState = eGameState.eGameState_Play;
-            MainManager.Instance.nCurLevel = nLevel;
+            Debug.Log("[PlayMain Debug] SetupPlayStage called. Level: " + nLevel);
+            m_isGameStarted = false;
+
+            if (MainManager.Instance != null)
+            {
+                MainManager.Instance.eCurState = eGameState.eGameState_Play;
+                MainManager.Instance.nCurLevel = nLevel;
+            }
+
+            // Play 씬 하단 구글 배너 광고 노출
+            if (AdmobManager.Instance != null)
+            {
+                AdmobManager.Instance.Show();
+            }
+
+            if (MapManager.Instance != null)
+            {
+                MapManager.Instance.ApplyLevelConfig(nLevel);
+            }
+
+            if (null == m_goPlayer && goPlayerSrc != null)
+            {
+                m_goPlayer = GameObject.Instantiate(goPlayerSrc) as GameObject;
+            }
+
+            if (CameraManager.Instance != null)
+            {
+                if (m_goPlayer != null) CameraManager.Instance.SetTarget(m_goPlayer);
+                CameraManager.Instance.Init();
+            }
+            else
+            {
+                CameraManager camMgr = FindFirstObjectByType<CameraManager>();
+                if (camMgr != null)
+                {
+                    if (m_goPlayer != null) camMgr.SetTarget(m_goPlayer);
+                    camMgr.Init();
+                }
+            }
+
+            if (m_goPlayer != null)
+            {
+                Player playerComp = m_goPlayer.GetComponent<Player>();
+                if (playerComp != null)
+                {
+                    playerComp.ResetJumpCount(10);
+                }
+
+                Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();
+                if (playerRb != null)
+                {
+                    playerRb.isKinematic = false;
+                    playerRb.linearVelocity = Vector3.zero;
+                    playerRb.angularVelocity = Vector3.zero;
+                    playerRb.isKinematic = true; // 대기 상태 동안 물리 중력 작동 멈춤
+                    playerRb.Sleep();
+                }
+                m_goPlayer.transform.position = Vector3.zero;
+                if (goPlayerSrc != null)
+                {
+                    m_goPlayer.transform.rotation = goPlayerSrc.transform.rotation;
+                }
+            }
+
+            if (MapManager.Instance != null)
+            {
+                MapManager.Instance.UnLoadCubeMap();
+                MapManager.Instance.LoadCubeMap(nLevel);
+            }
+
+            if (UI_Play.Instance != null)
+            {
+                UI_Play.Instance.SetPlayInfo(nLevel, 0, 10);
+                if (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goBtnRetry != null && false == UI_Play.Instance.ui.goBtnRetry.activeInHierarchy)
+                    UI_Play.Instance.ui.goBtnRetry.SetActive(true);
+                UI_Play.Instance.StartTime();
+                UI_Play.Instance.PauseTime(true); // 대기 상태 동안 시간 흐름 일시정지
+            }
         }
-
-        // Play 씬 하단 구글 배너 광고 노출
-        if (AdmobManager.Instance != null)
+        catch (System.Exception ex)
         {
-            AdmobManager.Instance.Show();
-        }
-
-        if (MapManager.Instance != null)
-        {
-            MapManager.Instance.ApplyLevelConfig(nLevel);
-        }
-
-        if (null == m_goPlayer)
-        {
-            m_goPlayer = GameObject.Instantiate(goPlayerSrc) as GameObject;
-            CameraManager.Instance.SetTarget(m_goPlayer);
-        }
-
-        Player playerComp = m_goPlayer.GetComponent<Player>();
-        if (playerComp != null)
-        {
-            playerComp.ResetJumpCount(10);
-        }
-
-        Rigidbody playerRb = m_goPlayer.GetComponent<Rigidbody>();
-        if (playerRb != null)
-        {
-            playerRb.linearVelocity = Vector3.zero;
-            playerRb.angularVelocity = Vector3.zero;
-            playerRb.isKinematic = true; // 대기 상태 동안 물리 중력 작동 멈춤
-            playerRb.Sleep();
-        }
-        m_goPlayer.transform.position = Vector3.zero;
-        m_goPlayer.transform.rotation = goPlayerSrc.transform.rotation;
-        CameraManager.Instance.Init();
-        MapManager.Instance.UnLoadCubeMap();
-        MapManager.Instance.LoadCubeMap(nLevel);
-
-        if (UI_Play.Instance != null)
-        {
-            UI_Play.Instance.SetPlayInfo(nLevel, 0, 10);
-            if (UI_Play.Instance.ui != null && UI_Play.Instance.ui.goBtnRetry != null && false == UI_Play.Instance.ui.goBtnRetry.activeInHierarchy)
-                UI_Play.Instance.ui.goBtnRetry.SetActive(true);
-            UI_Play.Instance.StartTime();
-            UI_Play.Instance.PauseTime(true); // 대기 상태 동안 시간 흐름 일시정지
-
-            // UI_Play.Instance.OpenHelpMsgBox_1(nLevel);
+            Debug.LogError($"[PlayMain Debug] Exception in SetupPlayStage(): {ex.Message}\n{ex.StackTrace}");
         }
     }
 
