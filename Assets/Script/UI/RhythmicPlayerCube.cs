@@ -41,7 +41,7 @@ public class RhythmicPlayerCube : MonoBehaviour
         {
             m_rb = gameObject.AddComponent<Rigidbody>();
         }
-        m_rb.useGravity = false; // 첫 도약 전까지 중력 OFF
+        m_rb.useGravity = true; // 항상 중력 ON 유지 (자연스러운 물리 낙하 및 포물선 점프 보장)
         m_rb.mass = 1.0f;
         m_rb.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
         m_rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -56,12 +56,11 @@ public class RhythmicPlayerCube : MonoBehaviour
 
     private void ResetParams(float startX, float startY, bool isInitialSpawn)
     {
-        // 도약 개시 전 Y축 속도를 가상 카메라 스크롤 속도(3.6f)로 동기화하여 관성 부여
         if (m_rb != null)
         {
+            m_rb.useGravity = true; // 중력 항시 ON 유지
             m_rb.linearVelocity = new Vector3(0f, 3.6f, 0f);
             m_rb.angularVelocity = Vector3.zero;
-            m_rb.useGravity = false; // 리스폰 복귀 후 첫 도약 전까지 중력 OFF
         }
 
         transform.position = new Vector3(startX, startY, transform.position.z);
@@ -127,7 +126,7 @@ public class RhythmicPlayerCube : MonoBehaviour
                     ? Random.Range(0.01f, 0.26f) 
                     : Random.Range(0.74f, 0.99f);
 
-                // 화면 바로 아래(-0.15f)에서 점프하며 솟구쳐 올라오도록 지정 (-0.45f 이탈 조건과 분리하여 무한 갱신 방지)
+                // 화면 바로 아래(-0.15f)에서 점프하며 솟구쳐 올라오도록 지정
                 float targetViewportY = -0.15f;
                 float targetZ = Random.Range(6.0f, 8.5f);
 
@@ -150,7 +149,7 @@ public class RhythmicPlayerCube : MonoBehaviour
     private void ExecuteJump()
     {
         if (m_rb == null) return;
-        m_rb.useGravity = true; // 도약 시작 시 중력 활성화
+        m_rb.useGravity = true; // 중력 항시 유지
 
         m_rb.linearVelocity = new Vector3(0f, 3.6f, 0f);
         m_rb.angularVelocity = Vector3.zero;
