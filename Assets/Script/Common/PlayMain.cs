@@ -85,8 +85,9 @@ public class PlayMain : MonoBehaviour
                 MapManager.Instance.ApplyLevelConfig(nLevel);
             }
 
-            if (null == m_goPlayer && goPlayerSrc != null)
+            if (m_goPlayer == null && goPlayerSrc != null)
             {
+                Debug.Log("[PlayMain Debug] Instantiating player cube from goPlayerSrc...");
                 m_goPlayer = GameObject.Instantiate(goPlayerSrc) as GameObject;
             }
 

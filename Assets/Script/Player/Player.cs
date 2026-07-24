@@ -100,11 +100,11 @@ public class Player : MonoBehaviour
 
             if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began)
             {
-                if (CameraManager.Instance.uiCamera != null)
+                if (CameraManager.Instance != null && CameraManager.Instance.uiCamera != null)
                 {
                     Ray ray = CameraManager.Instance.uiCamera.ScreenPointToRay(Input.GetTouch(0).position);
                     RaycastHit hit;
-                    if (true == Physics.Raycast(ray, out hit) && hit.collider.gameObject.layer == LayerMask.NameToLayer("MyUI"))
+                    if (true == Physics.Raycast(ray, out hit) && hit.collider != null && hit.collider.gameObject.layer == LayerMask.NameToLayer("MyUI"))
                     {
                     }
                     else
