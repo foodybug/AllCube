@@ -149,6 +149,8 @@ public class Title : MonoBehaviour
         }
     }
 
+    private float m_inputDelayTimer = 0.25f;
+
     void Update()
     {
         // 1. 가상 카메라 앵커 위치 갱신 (Y축으로 빠르게 상승하고 X축을 Sine파로 리드미컬하게 흔듦)
@@ -231,6 +233,13 @@ public class Title : MonoBehaviour
 
         if (MainManager.Instance == null) return;
 
+        // 초기화 직후 첫 프레임 터치 오작동 방지용 대기 타이머
+        if (m_inputDelayTimer > 0f)
+        {
+            m_inputDelayTimer -= Time.deltaTime;
+            return;
+        }
+
         // 로고 화면에서 터치 입력 감지 시 곧바로 Play 씬으로 전환 처리
         if (eGameState.eGameState_Logo == MainManager.Instance.eCurState)
         {
@@ -251,11 +260,18 @@ public class Title : MonoBehaviour
                     }
                 }
 
-                Debug.Log("[Title Debug] Screen Click/Touch detected. Calling StartLevel on MainManager.");
-                AudioManager.Instance.PlayBgm("Sound/bgm");
-                AdmobManager.Instance.Show();
+                try
+                {
+                    Debug.Log("[Title Debug] Screen Click/Touch detected. Calling StartLevel on MainManager.");
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlayBgm("Sound/bgm");
+                    if (AdmobManager.Instance != null) AdmobManager.Instance.Show();
 
-                MainManager.Instance.StartLevel(MainManager.Instance.nSaveLevel);
+                    MainManager.Instance.StartLevel(MainManager.Instance.nSaveLevel);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[Title Debug] Exception during Title touch transition: {ex.Message}\n{ex.StackTrace}");
+                }
             }
         }
     }

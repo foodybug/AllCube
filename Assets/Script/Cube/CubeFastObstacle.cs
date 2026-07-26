@@ -57,8 +57,7 @@ public class CubeFastObstacle : MonoBehaviour
             {
                 Debug.Log($"[CubeFastObstacle] Player hit Fast Meteor Block! Resetting jump count from {player.JumpCount} to 0.");
                 player.ResetJumpCount(0);
-
-
+                player.KillPlayer();
             }
         }
     }

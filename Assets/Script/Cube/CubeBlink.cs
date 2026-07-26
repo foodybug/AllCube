@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 
 public class CubeBlink : MonoBehaviour
 {
@@ -154,8 +154,7 @@ public class CubeBlink : MonoBehaviour
                 m_isTriggered = true;
                 Debug.Log($"[CubeBlink] Player hit Blink Obstacle! Resetting jump count from {player.JumpCount} to 0.");
                 player.ResetJumpCount(0);
-
-
+                player.KillPlayer();
             }
         }
     }

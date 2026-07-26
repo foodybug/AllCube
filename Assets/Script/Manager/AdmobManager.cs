@@ -45,7 +45,8 @@ public class AdmobManager : MonoBehaviour
 		if (bannerView != null) return;
 		try
 		{
-			bannerView = new BannerView("ca-app-pub-3940256099942544/6300978111", AdSize.SmartBanner, AdPosition.Bottom);
+			// AdSize.SmartBanner 대신 보편적 표준인 AdSize.Banner 사용 (구글 엠몹 최신 SDK 안드로이드 크래시 방지)
+			bannerView = new BannerView("ca-app-pub-3940256099942544/6300978111", AdSize.Banner, AdPosition.Bottom);
 			AdRequest request = new AdRequest.Builder().Build();
 			bannerView.LoadAd(request);
 		}
@@ -57,36 +58,36 @@ public class AdmobManager : MonoBehaviour
 
 	public void Show()
 	{
-		if (bannerView == null)
+		try
 		{
-			InitBanner();
-		}
+			if (bannerView == null)
+			{
+				InitBanner();
+			}
 
-		if (bannerView != null)
-		{
-			try
+			if (bannerView != null)
 			{
 				bannerView.Show();
 			}
-			catch (System.Exception ex)
-			{
-				Debug.LogWarning("[AdmobManager] Show exception caught: " + ex.Message);
-			}
+		}
+		catch (System.Exception ex)
+		{
+			Debug.LogWarning("[AdmobManager] Show exception caught safely: " + ex.Message);
 		}
 	}
 
 	public void Hide()
 	{
-		if (bannerView != null)
+		try
 		{
-			try
+			if (bannerView != null)
 			{
 				bannerView.Hide();
 			}
-			catch (System.Exception ex)
-			{
-				Debug.LogWarning("[AdmobManager] Hide exception caught: " + ex.Message);
-			}
+		}
+		catch (System.Exception ex)
+		{
+			Debug.LogWarning("[AdmobManager] Hide exception caught safely: " + ex.Message);
 		}
 	}
 }

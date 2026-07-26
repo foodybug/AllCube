@@ -59,8 +59,6 @@ public class CubeFlyingJumpZero : MonoBehaviour
                 MainManager.lastDeathCause = "JumpZero";
                 player.ResetJumpCount(0);
                 player.KillPlayer();
-
-
             }
         }
     }
