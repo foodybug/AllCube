@@ -21,13 +21,9 @@ public class Coin : MonoBehaviour
 
     void Update()
     {
-        if (m_playerTransform == null)
+        if (m_playerTransform == null && Player.Instance != null)
         {
-            Player player = FindFirstObjectByType<Player>();
-            if (player != null)
-            {
-                m_playerTransform = player.transform;
-            }
+            m_playerTransform = Player.Instance.transform;
         }
 
         if (m_playerTransform != null)

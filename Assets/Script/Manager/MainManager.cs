@@ -21,6 +21,12 @@ public class MainManager : MonoBehaviour
         {
             if (m_instance == null)
             {
+                string activeSceneName = SceneManager.GetActiveScene().name;
+                if (activeSceneName == "MapDisplay")
+                {
+                    return null;
+                }
+
                 SceneManager.LoadScene("Title");
                 return null;
             }
@@ -73,6 +79,15 @@ public class MainManager : MonoBehaviour
         }
         m_instance = this;
         DontDestroyOnLoad(gameObject);
+
+        // 해상도 1280x720 16:9 고정 (화면 찌그러짐 왜곡 완전 방지)
+#if UNITY_STANDALONE || UNITY_EDITOR
+        Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
+#endif
+
+        // 모바일 최적화: 60 FPS 고정 및 화면 슬립(자동 꺼짐) 방지
+        Application.targetFrameRate = 60;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
         // 씬 로드 완료 이벤트 구독
         SceneManager.sceneLoaded += OnSceneLoaded;

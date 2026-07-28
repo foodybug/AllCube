@@ -67,7 +67,39 @@ public class CubeLaser : MonoBehaviour
             rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(8);
         }
 
-        // 2. LineRenderer 컴포넌트 추가
+        // 2. 360도 무작위 출현 각도(spawnAngle) 및 스폰 위치 계산
+        float spawnAngle = Random.Range(0f, 360f); // 0~360도 전체 방향 무작위 각도
+        float spawnDistance = Random.Range(22.0f, 32.0f); // 화면 외곽 조준 거리
+
+        Player player = FindFirstObjectByType<Player>();
+        Vector3 playerPos = Vector3.zero;
+        if (player != null)
+        {
+            playerPos = player.transform.position;
+        }
+        else if (CameraManager.Instance != null && CameraManager.Instance.Target != null)
+        {
+            playerPos = CameraManager.Instance.Target.position;
+        }
+
+        Vector3 randomRadialDir = new Vector3(Mathf.Cos(spawnAngle * Mathf.Deg2Rad), Mathf.Sin(spawnAngle * Mathf.Deg2Rad), 0f);
+        Vector3 spawnPos = playerPos + randomRadialDir * spawnDistance;
+        spawnPos.z = 0f;
+
+        transform.position = spawnPos;
+
+        // 플레이어 본체 또는 약간의 미세 무작위 각도 오프셋(-15° ~ +15°)을 가미하여 다양한 각도의 발사 궤적 결정
+        float aimOffsetAngle = Random.Range(-15f, 15f);
+        Vector3 baseTargetDir = (playerPos - spawnPos).normalized;
+        if (baseTargetDir == Vector3.zero) baseTargetDir = Vector3.left;
+
+        m_targetDirection = (Quaternion.Euler(0, 0, aimOffsetAngle) * baseTargetDir).normalized;
+
+        // 레이저 블럭 조준 방향 회전
+        float angleZ = Mathf.Atan2(m_targetDirection.y, m_targetDirection.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angleZ);
+
+        // 3. LineRenderer 컴포넌트 추가
         m_lineRenderer = gameObject.AddComponent<LineRenderer>();
         
         Color laserColor = GetLaserColor(rend);
@@ -86,22 +118,7 @@ public class CubeLaser : MonoBehaviour
             m_lineRenderer.material.color = laserColor;
         }
 
-        // 3. 타겟팅할 플레이어 최초 위치 획득
-        Player player = FindAnyObjectByType<Player>();
-        Vector3 playerPos = Vector3.zero;
-        if (player != null)
-        {
-            playerPos = player.transform.position;
-        }
-        else
-        {
-            playerPos = transform.position + Vector3.left * 15f;
-        }
-
-        Vector3 spawnPos = transform.position;
-        m_targetDirection = (playerPos - spawnPos).normalized;
-
-        // 4. 레이저 경고 궤적 끝단 설정 (화면 밖 100미터 길이)
+        // 4. 레이저 경고 궤적 끝단 설정 (발사 궤적 방향으로 화면 밖 100미터 길이)
         m_lineRenderer.positionCount = 2;
         m_lineRenderer.SetPosition(0, spawnPos);
         m_lineRenderer.SetPosition(1, spawnPos + m_targetDirection * 100f);
@@ -172,7 +189,7 @@ public class CubeLaser : MonoBehaviour
         {
             if (player == null)
             {
-                player = FindAnyObjectByType<Player>();
+                player = FindFirstObjectByType<Player>();
             }
 
             if (player != null)

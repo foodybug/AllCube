@@ -15,7 +15,9 @@ public class MapManager : MonoBehaviour
         eMapProp_MoveY,
         eMapProp_JumpZero,
         eMapProp_Blink,
-        eMapProp_Laser
+        eMapProp_Laser,
+        eMapProp_Stationary,
+        eMapProp_Homing
     }
 
     static MapManager m_instance;
@@ -58,11 +60,24 @@ public class MapManager : MonoBehaviour
 
     [Header("Level Design Settings")]
     [SerializeField]
-    private StageConfig m_stageConfig = new StageConfig();
+    private StageDifficultyHolder m_difficultyHolder;
 
-    [SerializeField]
-    [HideInInspector]
-    private List<DifficultyTier> m_difficultyTier = new List<DifficultyTier>();
+    public StageDifficultyHolder DifficultyHolder
+    {
+        get
+        {
+            if (m_difficultyHolder == null)
+            {
+                m_difficultyHolder = FindAnyObjectByType<StageDifficultyHolder>();
+                if (m_difficultyHolder == null)
+                {
+                    GameObject go = new GameObject("StageDifficultyHolder");
+                    m_difficultyHolder = go.AddComponent<StageDifficultyHolder>();
+                }
+            }
+            return m_difficultyHolder;
+        }
+    }
 
     // 현재 레벨에 적용되는 런타임 세팅 값들
     private int m_staticObstacleInterval = 5;
@@ -74,37 +89,7 @@ public class MapManager : MonoBehaviour
 
     public DifficultyTier GetTierForHeight(int y)
     {
-        if (m_stageConfig == null)
-        {
-            m_stageConfig = new StageConfig();
-        }
-        MigrateDifficultyTiers();
-        return m_stageConfig.GetTierForHeight(y);
-    }
-
-    private void MigrateDifficultyTiers()
-    {
-        if (m_stageConfig == null)
-        {
-            m_stageConfig = new StageConfig();
-        }
-
-        if (m_stageConfig.DifficultyTiers == null || m_stageConfig.DifficultyTiers.Count < 50)
-        {
-            if (m_difficultyTier != null && m_difficultyTier.Count >= 50)
-            {
-                m_stageConfig.DifficultyTiers = new List<DifficultyTier>(m_difficultyTier);
-            }
-            else
-            {
-                m_stageConfig.DifficultyTiers = StageConfig.GenerateDefault50Tiers();
-            }
-        }
-    }
-
-    private void OnValidate()
-    {
-        MigrateDifficultyTiers();
+        return DifficultyHolder.GetTierForHeight(y);
     }
 
     [Header("Infinite Scroll Settings")]
@@ -375,8 +360,13 @@ public class MapManager : MonoBehaviour
             Renderer rend = m_goFloor.GetComponent<Renderer>();
             if (rend != null)
             {
-                rend.material.color = new Color(0.12f, 0.12f, 0.12f, 1.0f); // 세련된 매트 챠콜 블랙
                 rend.enabled = true; // 데드존 가시성 활성화
+            }
+
+            // 사이버 디지털 글리치(Glitch) 효과 컴포넌트 적용
+            if (m_goFloor.GetComponent<GlitchDeadZoneEffect>() == null)
+            {
+                m_goFloor.AddComponent<GlitchDeadZoneEffect>();
             }
 
             Collider col = m_goFloor.GetComponent<Collider>();
@@ -503,6 +493,14 @@ public class MapManager : MonoBehaviour
 
             case eMapProp.eMapProp_Laser:
                 go.AddComponent<CubeLaser>();
+                break;
+
+            case eMapProp.eMapProp_Stationary:
+                go.AddComponent<CubeStationaryObstacle>();
+                break;
+
+            case eMapProp.eMapProp_Homing:
+                go.AddComponent<CubeHomingObstacle>();
                 break;
         }
 
@@ -835,6 +833,8 @@ public class MapManager : MonoBehaviour
         int minX = tier.minSpawnX;
         int maxX = tier.maxSpawnX;
         int staticInterval = tier.staticObstacleInterval;
+        int stationaryInterval = tier.stationaryObstacleInterval;
+        int minStationaryY = tier.minStationaryHeight;
         int flyingInterval = tier.flyingObstacleInterval;
         int coinInt = tier.coinInterval;
         int coinSeq = tier.coinSequence;
@@ -851,20 +851,38 @@ public class MapManager : MonoBehaviour
         int blinkInterval = tier.blinkObstacleInterval;
         int minBlinkY = tier.minBlinkHeight;
 
-        // 난이도 티어에 설정된 조건(최소 높이 및 스폰 주기)에 따라 Blink 장애물 생성
-        if (blinkInterval > 0 && y >= minBlinkY && y % blinkInterval == 0)
+        // 1. 설정된 주기에 따라 제자리에 고정된 Stationary 장애물 생성
+        if (stationaryInterval > 0 && y >= minStationaryY && y % stationaryInterval == 0)
+        {
+            hasObstacle = true;
+            int randomX = Random.Range(minX + 2, maxX + 1);
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Stationary, rowScrollWidth, false));
+        }
+
+        // 2. 난이도 티어에 설정된 조건(최소 높이 및 스폰 주기)에 따라 Blink 장애물 생성 (이전 장애물과 중복 방지)
+        if (!hasObstacle && blinkInterval > 0 && y >= minBlinkY && y % blinkInterval == 0)
         {
             hasObstacle = true;
             int randomX = Random.Range(minX + 2, maxX + 1);
             m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Blink, rowScrollWidth, false));
         }
 
-        // 설정된 주기에 따라 기존의 고정형(공중) JumpZero 장애물 생성 (Blink와 겹치지 않게)
+        // 3. 설정된 주기에 따라 기존의 고정형 JumpZero 장애물 생성
         if (!hasObstacle && y >= 3 && staticInterval > 0 && y % staticInterval == 0)
         {
             hasObstacle = true;
             int randomX = Random.Range(minX + 2, maxX + 1);
             m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false));
+        }
+
+        // 4. 느린 속도로 플레이어를 은밀히 추적해오는 Homing 장애물 생성
+        int homingInterval = tier.homingObstacleInterval;
+        int minHomingY = tier.minHomingHeight;
+        if (!hasObstacle && homingInterval > 0 && y >= minHomingY && y % homingInterval == 0)
+        {
+            hasObstacle = true;
+            int randomX = Random.Range(minX + 2, maxX + 1);
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Homing, rowScrollWidth, false));
         }
 
         // 설정된 주기에 따라 화면 외곽에서 가로지르는 비행형 JumpZero 장애물 생성 (관통함)

@@ -47,7 +47,7 @@ public class CubeDeadly : MonoBehaviour
         {
             if (player == null)
             {
-                player = FindAnyObjectByType<Player>();
+                player = Player.Instance;
             }
 
             if (player != null)

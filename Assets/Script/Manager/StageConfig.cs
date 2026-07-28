@@ -8,9 +8,13 @@ public struct DifficultyTier
     public int minSpawnX;
     public int maxSpawnX;
     public int staticObstacleInterval;
+    public int stationaryObstacleInterval; // 제자리에 가만히 있는 장애물 생성 주기 (0 이면 미생성)
+    public int minStationaryHeight;        // 제자리 장애물 등장 최소 높이
     public int flyingObstacleInterval;
-    public int blinkObstacleInterval; // Blink 장애물 생성 주기 (0 이면 미생성)
-    public int minBlinkHeight;        // Blink 장애물이 등장하기 시작하는 최소 높이
+    public int blinkObstacleInterval;     // Blink 장애물 생성 주기 (0 이면 미생성)
+    public int minBlinkHeight;            // Blink 장애물이 등장하기 시작하는 최소 높이
+    public int homingObstacleInterval;    // 느린 추적 장애물 생성 주기 (0 이면 미생성)
+    public int minHomingHeight;           // 추적 장애물 등장 최소 높이
     public int coinInterval;
     public int coinSequence;
     public float minFlyingSpeed;
@@ -30,6 +34,11 @@ public class StageConfig
         set { m_difficultyTier = value; }
     }
 
+    public void ResetToDefaultTiers()
+    {
+        m_difficultyTier = GenerateDefault50Tiers();
+    }
+
     public static List<DifficultyTier> GenerateDefault50Tiers()
     {
         List<DifficultyTier> list = new List<DifficultyTier>();
@@ -39,18 +48,24 @@ public class StageConfig
         {
             float progress = (float)i / (totalTiers - 1); // 0.0 ~ 1.0
 
-            int minHeight = i * 20; // 0, 20, 40, ..., 980
+            // minHeight 수치를 기존(i * 20)에서 반으로 축소 (0, 10, 20, ..., 490)
+            int minHeight = i * 10;
 
-            // 스폰 영역 폭: 초기 [-30, 30] (폭 60) 에서 후반부 [-9, 9] (폭 18) 로 점진 축소
-            int spawnWidth = Mathf.RoundToInt(Mathf.Lerp(30f, 9f, progress));
+            // 스폰 영역 폭: 기존 [-30, 30]에서 반으로 축소하여 [-15, 15] ~ [-5, 5]로 점진 축소
+            int spawnWidth = Mathf.Max(5, Mathf.RoundToInt(Mathf.Lerp(15f, 5f, progress)));
             int minSpawnX = -spawnWidth;
             int maxSpawnX = spawnWidth;
 
-            // 정적 및 비행 장애물 간격: 초반에는 12~16칸 간격, 후반부엔 3~4칸 간격으로 밀도 증가
+            // 정적 및 비행 장애물 간격
             int staticInterval = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(12f, 3f, progress)));
+
+            // 제자리에 가만히 있는 장애물: 전체 50개 Tier 전반에 걸쳐 골고루 분배 (간격 14 -> 3)
+            int stationaryInterval = Mathf.Max(3, Mathf.RoundToInt(Mathf.Lerp(14f, 3f, progress)));
+            int minStationaryH = minHeight;
+
             int flyingInterval = Mathf.Max(4, Mathf.RoundToInt(Mathf.Lerp(16f, 4f, progress)));
 
-            // 깜빡이 장애물: Tier 8 (높이 160m) 이상부터 최초 등장하며 점점 빈도 증가
+            // 깜빡이 장애물: Tier 8 이상부터 등장
             int blinkInterval = 0;
             int minBlinkH = 0;
             if (i >= 8)
@@ -60,11 +75,20 @@ public class StageConfig
                 minBlinkH = minHeight;
             }
 
-            // 코인 생성 간격: 갯수를 추가 2배 늘리기 위해 간격 축소 (1~3칸마다 스폰)
-            int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));
-            int coinSequence = (i % 5 == 0 && i < 30) ? 2 : 1; // 특정 단계마다 연속 코인 이벤트 부여
+            // 느린 추적 장애물 (CubeHomingObstacle): Tier 10 이상부터 등장 (간격 16 -> 4)
+            int homingInterval = 0;
+            int minHomingH = 0;
+            if (i >= 10)
+            {
+                float homingProgress = (float)(i - 10) / (totalTiers - 11);
+                homingInterval = Mathf.Max(4, Mathf.RoundToInt(Mathf.Lerp(16f, 4f, homingProgress)));
+                minHomingH = minHeight;
+            }
 
-            // 비행 장애물 이동 속도: 처음 초기값 유지 (4.0f ~ 6.0f)
+            // 코인 생성 간격 및 연속 스폰 이벤트
+            int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));
+            int coinSequence = (i % 5 == 0 && i < 30) ? 2 : 1;
+
             float minSpeed = 4.0f;
             float maxSpeed = 6.0f;
 
@@ -74,9 +98,13 @@ public class StageConfig
                 minSpawnX = minSpawnX,
                 maxSpawnX = maxSpawnX,
                 staticObstacleInterval = staticInterval,
+                stationaryObstacleInterval = stationaryInterval,
+                minStationaryHeight = minStationaryH,
                 flyingObstacleInterval = flyingInterval,
                 blinkObstacleInterval = blinkInterval,
                 minBlinkHeight = minBlinkH,
+                homingObstacleInterval = homingInterval,
+                minHomingHeight = minHomingH,
                 coinInterval = coinInterval,
                 coinSequence = coinSequence,
                 minFlyingSpeed = minSpeed,
@@ -89,8 +117,8 @@ public class StageConfig
 
     public DifficultyTier GetTierForHeight(int y)
     {
-        // 1. 순환 주기 계산 (마지막 티어의 minHeight와 그 이전 티어의 minHeight 차이 기준)
-        int cycleHeight = 1000;
+        // 1. 순환 주기 계산
+        int cycleHeight = 500;
         int count = m_difficultyTier.Count;
         if (count > 1)
         {
@@ -124,11 +152,13 @@ public class StageConfig
 
         if (!found)
         {
-            // Fallback (아무것도 찾지 못했을 때 기본 세팅값 반환)
+            // Fallback (기본 세팅 반으로 축소 반영)
             activeTier.minHeight = 0;
-            activeTier.minSpawnX = -30;
-            activeTier.maxSpawnX = 30;
+            activeTier.minSpawnX = -15;
+            activeTier.maxSpawnX = 15;
             activeTier.staticObstacleInterval = 5;
+            activeTier.stationaryObstacleInterval = 6;
+            activeTier.minStationaryHeight = 0;
             activeTier.flyingObstacleInterval = 8;
             activeTier.blinkObstacleInterval = 0;
             activeTier.minBlinkHeight = 0;
@@ -139,46 +169,33 @@ public class StageConfig
             activeTier.segmentPrefabs = null;
         }
 
-        // 3. 순환 횟수(cycleCount)에 따른 보정치 적용 (패널티 강화, 어드밴티지 약화)
+        // 3. 순환 횟수(cycleCount)에 따른 보정치 적용
         if (cycleCount > 0)
         {
-            // 3-1. 패널티 강화
-            // staticObstacleInterval (장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
             activeTier.staticObstacleInterval = Mathf.Max(2, activeTier.staticObstacleInterval - cycleCount);
-
-            // flyingObstacleInterval (비행 장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
+            activeTier.stationaryObstacleInterval = Mathf.Max(2, activeTier.stationaryObstacleInterval - cycleCount);
             activeTier.flyingObstacleInterval = Mathf.Max(2, activeTier.flyingObstacleInterval - cycleCount);
 
-            // blinkObstacleInterval (깜빡이 장애물 간격 좁힘 -> 더 자주 나옴, 최소 2)
             if (activeTier.blinkObstacleInterval > 0)
             {
                 activeTier.blinkObstacleInterval = Mathf.Max(2, activeTier.blinkObstacleInterval - cycleCount);
             }
 
-            // 비행 장애물 속도는 초반 초기값(4.0f ~ 6.0f)으로 고정 유지
-
-            // 좌우 스폰 폭 좁히기 (순환당 좌우 1칸씩 좁힘 -> 기둥 간격 좁아져 위협 상승)
-            // 단, 너무 좁아져 진행이 불가하지 않도록 최소 가로폭 10 유지
             int requestedMinX = activeTier.minSpawnX + cycleCount;
             int requestedMaxX = activeTier.maxSpawnX - cycleCount;
-            if (requestedMaxX - requestedMinX >= 10)
+            if (requestedMaxX - requestedMinX >= 5)
             {
                 activeTier.minSpawnX = requestedMinX;
                 activeTier.maxSpawnX = requestedMaxX;
             }
             else
             {
-                // 중간점을 기준으로 최소 가로폭 10 유지
                 int center = (activeTier.minSpawnX + activeTier.maxSpawnX) / 2;
-                activeTier.minSpawnX = center - 5;
-                activeTier.maxSpawnX = center + 5;
+                activeTier.minSpawnX = center - 2;
+                activeTier.maxSpawnX = center + 2;
             }
 
-            // 3-2. 어드밴티지 약화
-            // coinInterval (코인 획득 간격 늘림 -> 덜 나옴, 최대 20)
             activeTier.coinInterval = Mathf.Min(20, activeTier.coinInterval + cycleCount);
-
-            // coinSequence (코인 연속 스폰 갯수 줄임 -> 덜 나옴, 최소 1)
             activeTier.coinSequence = Mathf.Max(1, activeTier.coinSequence - cycleCount);
         }
 

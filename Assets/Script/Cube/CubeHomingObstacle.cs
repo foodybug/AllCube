@@ -1,0 +1,141 @@
+using UnityEngine;
+
+/// <summary>
+/// 느린 속도(chaseSpeed)로 플레이어(Player)의 위치를 2D 공간상에서 은밀히 추적해오는 장애물 블럭
+/// </summary>
+public class CubeHomingObstacle : MonoBehaviour
+{
+    [Header("Homing Chase Settings")]
+    [SerializeField]
+    private float m_chaseSpeed = 1.8f; // 느리고 은밀하게 추적하는 속도
+
+    [SerializeField]
+    private float m_maxDetectDistance = 35.0f; // 추적 감지 최대 거리
+
+    private Transform m_playerTarget;
+    private Renderer m_renderer;
+    private Color m_baseColor = new Color(0.9f, 0.15f, 0.15f, 1.0f); // 경고용 진한 레드
+    private bool m_isTriggered = false;
+
+    private void Awake()
+    {
+        m_renderer = GetComponent<Renderer>();
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true; // 물리 밀림 방지
+        }
+
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            col.isTrigger = true; // 통과형 위험 장애물 충돌 처리
+        }
+    }
+
+    private void Start()
+    {
+        FindPlayerTarget();
+        InitVisuals();
+    }
+
+    private void InitVisuals()
+    {
+        if (m_renderer != null && MapManager.Instance != null)
+        {
+            m_renderer.sharedMaterial = MapManager.Instance.GetSharedMaterial(8); // 위험 빨간색 머티리얼
+        }
+
+        if (m_renderer != null && m_renderer.material != null)
+        {
+            m_renderer.material.color = m_baseColor;
+            if (m_renderer.material.HasProperty("_Color"))
+            {
+                m_renderer.material.SetColor("_Color", m_baseColor);
+            }
+        }
+    }
+
+    private MaterialPropertyBlock m_propBlock;
+
+    private void FindPlayerTarget()
+    {
+        if (m_playerTarget == null)
+        {
+            if (Player.Instance != null)
+            {
+                m_playerTarget = Player.Instance.transform;
+            }
+            else if (CameraManager.Instance != null && CameraManager.Instance.Target != null)
+            {
+                m_playerTarget = CameraManager.Instance.Target;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        FindPlayerTarget();
+
+        if (m_playerTarget == null) return;
+
+        // 플레이어와의 2D 거리 계산
+        Vector3 currentPos = transform.position;
+        Vector3 targetPos = m_playerTarget.position;
+        targetPos.z = currentPos.z; // Z축 고정
+
+        float distance = Vector3.Distance(currentPos, targetPos);
+
+        // 플레이어 직후면 하단으로 지나쳐 떨어지거나(22m 이하) 감지 한계를 벗어나면 자동 소거
+        if (currentPos.y < targetPos.y - 22.0f || distance > 45.0f)
+        {
+            Util.MyDestroy(gameObject);
+            return;
+        }
+
+        // 감지 범위 내에 플레이어가 있을 경우 느린 속도로 플레이어를 향해 이동
+        if (distance <= m_maxDetectDistance && distance > 0.05f)
+        {
+            transform.position = Vector3.MoveTowards(currentPos, targetPos, m_chaseSpeed * Time.deltaTime);
+
+            // MaterialPropertyBlock을 사용한 GPU Instancing 유지 펄스 연출
+            if (m_renderer != null)
+            {
+                if (m_propBlock == null) m_propBlock = new MaterialPropertyBlock();
+                float pulse = 0.7f + 0.3f * Mathf.PingPong(Time.time * 3.0f, 1.0f);
+                Color pulseColor = new Color(m_baseColor.r * pulse, m_baseColor.g * pulse, m_baseColor.b * pulse, 1.0f);
+                m_renderer.GetPropertyBlock(m_propBlock);
+                m_propBlock.SetColor("_Color", pulseColor);
+                m_renderer.SetPropertyBlock(m_propBlock);
+            }
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (m_isTriggered) return;
+
+        Player player = other.GetComponent<Player>();
+        if (player == null)
+        {
+            player = other.GetComponentInParent<Player>();
+        }
+
+        if (player != null || other.CompareTag("Player") || other.name.Contains("Player"))
+        {
+            if (player == null)
+            {
+                player = FindFirstObjectByType<Player>();
+            }
+
+            if (player != null)
+            {
+                m_isTriggered = true;
+                Debug.Log($"[CubeHomingObstacle] Hit player! Killing player...");
+                player.ResetJumpCount(0);
+                player.KillPlayer();
+            }
+        }
+    }
+}

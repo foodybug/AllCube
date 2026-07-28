@@ -35,6 +35,10 @@ public class UI_Play : MonoBehaviour
     private int m_nMaxHeightThisRun = 0;
     public int MaxHeightThisRun { get { return m_nMaxHeightThisRun; } }
 
+    private int m_lastCoin = -1;
+    private int m_lastCurrentHeight = -1;
+    private int m_lastJumps = -1;
+
     void Awake()
     {
         m_instance = this;
@@ -276,7 +280,7 @@ public class UI_Play : MonoBehaviour
 
     public void SetPlayInfo(int nCoin)
     {
-        SetPlayInfo(nCoin, 10);
+        SetPlayInfo(m_nLevelBuff, nCoin, 10);
     }
 
     public void SetPlayStats(int nCoin, int nJumps)
@@ -299,6 +303,17 @@ public class UI_Play : MonoBehaviour
             playerY = CameraManager.Instance.Target.position.y;
         }
         int currentHeight = Mathf.Max(0, Mathf.FloorToInt(playerY));
+
+        // 수치가 실제로 변했을 때만 UI 텍스트 갱신 (매 프레임 힙 가비지 생성 완전 차단)
+        if (nCoin == m_lastCoin && currentHeight == m_lastCurrentHeight && nJumps == m_lastJumps)
+        {
+            return;
+        }
+
+        m_lastCoin = nCoin;
+        m_lastCurrentHeight = currentHeight;
+        m_lastJumps = nJumps;
+
         if (currentHeight > m_nMaxHeightThisRun)
         {
             m_nMaxHeightThisRun = currentHeight;
@@ -321,7 +336,7 @@ public class UI_Play : MonoBehaviour
 
         string strLevel = "Level " + m_nLevelBuff.ToString();
         string strJewel = string.Format("Jewel {0:n0}", nCoin);
-        string strHeight = string.Format("Height {0}m (Best {1}m)", currentHeight, allTimeBest);
+        string strHeight = string.Format("Height {0}m", currentHeight);
 
         if (ui.textHeight != null)
         {
@@ -365,6 +380,33 @@ public class UI_Play : MonoBehaviour
         }
     }
 
+    private void SetupComboPosition()
+    {
+        if (ui == null || ui.textCombo == null) return;
+
+        RectTransform rtCombo = ui.textCombo.GetComponent<RectTransform>();
+        if (rtCombo != null)
+        {
+            // 가운데 위쪽 앵커 (Top-Center)
+            rtCombo.anchorMin = new Vector2(0.5f, 1.0f);
+            rtCombo.anchorMax = new Vector2(0.5f, 1.0f);
+            rtCombo.pivot = new Vector2(0.5f, 1.0f);
+
+            float targetY = -90f; // 기본 상단 Y 위치
+            if (ui.textJumps != null)
+            {
+                RectTransform rtJumps = ui.textJumps.GetComponent<RectTransform>();
+                if (rtJumps != null)
+                {
+                    targetY = rtJumps.anchoredPosition.y - 45f; // Jump UI보다 45px 아래로 넉넉하게 배치
+                }
+            }
+
+            rtCombo.anchoredPosition = new Vector2(0f, targetY);
+            ui.textCombo.alignment = TextAnchor.UpperCenter;
+        }
+    }
+
     public void UpdateCombo(int comboCount)
     {
         if (ui.textCombo == null)
@@ -374,6 +416,7 @@ public class UI_Play : MonoBehaviour
 
         if (ui.textCombo != null)
         {
+            SetupComboPosition();
             if (comboCount > 0)
             {
                 ui.textCombo.text = $"COMBO x{comboCount}";

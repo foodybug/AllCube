@@ -22,15 +22,9 @@
       <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
     </activity>
 
-    <!-- Google Mobile Ads Application ID (Required by Google Mobile Ads SDK to prevent startup crash) -->
+    <!-- Google Mobile Ads Application ID -->
     <meta-data
         android:name="com.google.android.gms.ads.APPLICATION_ID"
         android:value="ca-app-pub-3940256099942544~3347511713"/>
-
-    <!-- Google Mobile Ads Activity -->
-    <activity android:name="com.google.android.gms.ads.AdActivity"
-              android:exported="false"
-              android:configChanges="fontScale|keyboard|keyboardHidden|locale|mnc|mcc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|touchscreen">
-    </activity>
   </application>
 </manifest>

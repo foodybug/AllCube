@@ -14,6 +14,8 @@ public class Player : MonoBehaviour
     [Header("Combo Physics Settings")]
     [SerializeField] private float m_comboJumpForceMultiplier = 0.02f;
     [SerializeField] private float m_maxComboJumpForceBonus = 0.40f;
+    [SerializeField] private float m_comboTorqueMultiplier = 0.08f; // 콤보당 회전 속도 8% 증가
+    [SerializeField] private float m_maxComboTorqueBonus = 2.50f;   // 최대 250% 회전 속도 가속
 
     [Header("Combo Audio Settings")]
     [SerializeField] private string m_jumpSoundPath = "Sound/jump";
@@ -28,8 +30,6 @@ public class Player : MonoBehaviour
     private float lastMoveX = 0.0f;
     private bool m_bDead = false;
 
-
-
     // 캐싱된 컴포넌트 변수
     private Rigidbody m_rb;
     private Renderer m_renderer;
@@ -41,12 +41,27 @@ public class Player : MonoBehaviour
     private float initialRotationX;
     private float initialRotationY;
 
+    public static Player Instance { get; private set; }
+
     void Awake()
     {
+        Instance = this;
         initialRotationX = transform.rotation.eulerAngles.x;
         initialRotationY = transform.rotation.eulerAngles.y;
         m_rb = GetComponent<Rigidbody>();
         m_renderer = GetComponent<Renderer>();
+
+        // 레거시 TrailRenderer 컴포넌트가 존재하면 완전 제거
+        TrailRenderer tr = GetComponent<TrailRenderer>();
+        if (tr != null)
+        {
+            Destroy(tr);
+        }
+
+        if (GetComponent<PlayerCubeGhostTrail>() == null)
+        {
+            gameObject.AddComponent<PlayerCubeGhostTrail>();
+        }
     }
 
     void Start()
@@ -156,8 +171,12 @@ public class Player : MonoBehaviour
                     float comboJumpMultiplier = 1.0f + Mathf.Min(combo * m_comboJumpForceMultiplier, m_maxComboJumpForceBonus);
                     float finalJumpForce = amount * comboJumpMultiplier;
 
+                    // 콤보 카운트가 높아질수록 회전 토크(Torque) 속도를 가속 적용
+                    float comboTorqueMultiplier = 1.0f + Mathf.Min(combo * m_comboTorqueMultiplier, m_maxComboTorqueBonus);
+                    float finalTorque = torque * comboTorqueMultiplier;
+
                     m_rb.AddForce(new Vector3(moveX * amountX, finalJumpForce, 0) * Time.deltaTime, ForceMode.Impulse);
-                    m_rb.AddTorque(new Vector3(0, 0, -moveX * torque) * Time.deltaTime, ForceMode.Impulse);
+                    m_rb.AddTorque(new Vector3(0, 0, -moveX * finalTorque) * Time.deltaTime, ForceMode.Impulse);
 
                     float pitch = 1.0f + Mathf.Min(combo * m_comboPitchMultiplier, m_maxComboPitchBonus);
                     AudioManager.Instance.Play(m_jumpSoundPath, m_jumpSoundVolume, pitch);

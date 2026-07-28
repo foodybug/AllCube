@@ -36,12 +36,23 @@ public class CameraManager : MonoBehaviour
         m_enableXFollow = true;
     }
 
+    private int m_lastScreenWidth = 0;
+    private int m_lastScreenHeight = 0;
+
     void Start()
     {
+        EnforceAspectRatio();
     }
 
     void Update()
     {
+        // 모바일 기기별 해상도 변경 감지 시 종횡비 자동 보정
+        if (Screen.width != m_lastScreenWidth || Screen.height != m_lastScreenHeight)
+        {
+            m_lastScreenWidth = Screen.width;
+            m_lastScreenHeight = Screen.height;
+            EnforceAspectRatio();
+        }
     }
 
     void FixedUpdate()
@@ -81,6 +92,37 @@ public class CameraManager : MonoBehaviour
         mainCamera.transform.position = new Vector3(0.0f, 0.0f, -10.0f);
         mainCamera.orthographicSize = m_fOrthographicSize_Min;
         isFollowing = true;
+
+        EnforceAspectRatio();
+    }
+
+    public void EnforceAspectRatio()
+    {
+        if (mainCamera == null) return;
+
+        float targetAspect = 16.0f / 9.0f; // 1280x720 고정 16:9 종횡비
+        float currentAspect = (float)Screen.width / Screen.height;
+        float scaleHeight = currentAspect / targetAspect;
+
+        if (scaleHeight < 1.0f)
+        {
+            Rect rect = mainCamera.rect;
+            rect.width = 1.0f;
+            rect.height = scaleHeight;
+            rect.x = 0;
+            rect.y = (1.0f - scaleHeight) / 2.0f;
+            mainCamera.rect = rect;
+        }
+        else
+        {
+            float scaleWidth = 1.0f / scaleHeight;
+            Rect rect = mainCamera.rect;
+            rect.width = scaleWidth;
+            rect.height = 1.0f;
+            rect.x = (1.0f - scaleWidth) / 2.0f;
+            rect.y = 0;
+            mainCamera.rect = rect;
+        }
     }
 
     public void SetTarget(GameObject go)
