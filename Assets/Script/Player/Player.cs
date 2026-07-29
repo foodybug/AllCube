@@ -51,17 +51,12 @@ public class Player : MonoBehaviour
         m_rb = GetComponent<Rigidbody>();
         m_renderer = GetComponent<Renderer>();
 
-        // 레거시 TrailRenderer 컴포넌트가 존재하면 완전 제거
+        // TrailRenderer 및 PlayerCubeGhostTrail 이펙트 완전 비활성화 및 제거
         TrailRenderer tr = GetComponent<TrailRenderer>();
-        if (tr != null)
-        {
-            Destroy(tr);
-        }
+        if (tr != null) Destroy(tr);
 
-        if (GetComponent<PlayerCubeGhostTrail>() == null)
-        {
-            gameObject.AddComponent<PlayerCubeGhostTrail>();
-        }
+        PlayerCubeGhostTrail ghost = GetComponent<PlayerCubeGhostTrail>();
+        if (ghost != null) Destroy(ghost);
     }
 
     void Start()

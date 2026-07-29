@@ -101,20 +101,8 @@ public class PlayerCubeGhostTrail : MonoBehaviour
 
     private void Update()
     {
-        EnsureReferences();
-
-        // 렌더러가 비활성화된 경우(사망 등)는 스폰 중단
-        if (m_playerRenderer != null && !m_playerRenderer.enabled) return;
-
-        int combo = (JumpIntervalTracker.Instance != null) ? JumpIntervalTracker.Instance.ComboCount : 0;
-        float spawnInterval = Mathf.Max(0.015f, 0.04f - (combo * 0.004f));
-
-        m_spawnTimer += Time.deltaTime;
-        if (m_spawnTimer >= spawnInterval)
-        {
-            m_spawnTimer = 0f;
-            SpawnGhostCube(combo);
-        }
+        // 트레일(Ghost Trail) 이펙트 완전 비활성화
+        return;
     }
 
     private Color GetPlayerBaseColor()
