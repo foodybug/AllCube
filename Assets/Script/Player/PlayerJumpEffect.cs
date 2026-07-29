@@ -2,12 +2,15 @@ using UnityEngine;
 
 /// <summary>
 /// 플레이어가 점프할 때 해당 도약 위치에 즉각 생성되는 점프 파티클 이펙트
-/// Prefab/FX/FX_PlayerJump 프리팹 연동 및 파티클 개수/속도/개별 Color Over Time(시간에 따른 파티클별 고유 색상 변화) 시스템
+/// Prefab/FX/FX_PlayerJump 프리팹 연동 및 파티클 개수/속도/개별 Color Over Time(시간에 따른 파티클별 고유 색상 변화) 시스템 (0-GC 극대화 최적화)
 /// </summary>
 public class PlayerJumpEffect : MonoBehaviour
 {
     private static GameObject s_jumpEffectPrefab = null;
     private static Material s_sharedJumpMat = null;
+    private static Gradient s_cachedGradA = null;
+    private static Gradient s_cachedGradB = null;
+    private static MaterialPropertyBlock s_sharedMPB = null;
 
     public static GameObject GetJumpPrefab()
     {
@@ -34,6 +37,30 @@ public class PlayerJumpEffect : MonoBehaviour
         return s_sharedJumpMat;
     }
 
+    public static MaterialPropertyBlock GetSharedPropertyBlock()
+    {
+        if (s_sharedMPB == null) s_sharedMPB = new MaterialPropertyBlock();
+        return s_sharedMPB;
+    }
+
+    private static void EnsureStaticGradients()
+    {
+        if (s_cachedGradA == null)
+        {
+            s_cachedGradA = new Gradient();
+            s_cachedGradA.SetKeys(
+                new GradientColorKey[] { new GradientColorKey(new Color(0.2f, 0.85f, 1.0f), 0f), new GradientColorKey(new Color(0.9f, 0.2f, 0.9f), 1f) },
+                new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+            );
+
+            s_cachedGradB = new Gradient();
+            s_cachedGradB.SetKeys(
+                new GradientColorKey[] { new GradientColorKey(new Color(1.0f, 0.85f, 0.2f), 0f), new GradientColorKey(new Color(1.0f, 0.3f, 0.1f), 1f) },
+                new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+            );
+        }
+    }
+
     public static void Spawn(Vector3 jumpPos)
     {
         int combo = (JumpIntervalTracker.Instance != null) ? JumpIntervalTracker.Instance.ComboCount : 0;
@@ -43,7 +70,7 @@ public class PlayerJumpEffect : MonoBehaviour
         {
             GameObject fxInstance = Instantiate(prefab, jumpPos, Quaternion.identity);
 
-            // 콜라이더 무력화 (플레이어 도약 물리 충돌 차단)
+            // 콜라이더 무력화 (플레이어 도약 물리 충돌 차단 - enabled=false 후 비동기 Destroy)
             Collider[] cols = fxInstance.GetComponentsInChildren<Collider>();
             foreach (var c in cols)
             {
@@ -58,6 +85,7 @@ public class PlayerJumpEffect : MonoBehaviour
             ParticleSystem[] psList = fxInstance.GetComponentsInChildren<ParticleSystem>();
             if (psList != null && psList.Length > 0)
             {
+                EnsureStaticGradients();
                 float speedMultiplier = 1.0f + (combo * 0.20f); // 콤보당 속도 20% 상승
                 int extraParticles = combo * 3;                // 콤보당 파티클 3개 추가
 
@@ -68,23 +96,10 @@ public class PlayerJumpEffect : MonoBehaviour
                         var main = ps.main;
                         main.simulationSpeed *= speedMultiplier;
 
-                        // 개별 파티클마다 독립적 Color Over Time (랜덤 두 미치 그라데이션) 설정
+                        // 개별 파티클마다 독립적 Color Over Time (정적 캐싱된 듀얼 그라데이션) 설정
                         var colorOverLifetime = ps.colorOverLifetime;
                         colorOverLifetime.enabled = true;
-
-                        Gradient gradA = new Gradient();
-                        gradA.SetKeys(
-                            new GradientColorKey[] { new GradientColorKey(new Color(0.2f, 0.85f, 1.0f), 0f), new GradientColorKey(new Color(0.9f, 0.2f, 0.9f), 1f) },
-                            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
-                        );
-
-                        Gradient gradB = new Gradient();
-                        gradB.SetKeys(
-                            new GradientColorKey[] { new GradientColorKey(new Color(1.0f, 0.85f, 0.2f), 0f), new GradientColorKey(new Color(1.0f, 0.3f, 0.1f), 1f) },
-                            new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
-                        );
-
-                        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradA, gradB);
+                        colorOverLifetime.color = new ParticleSystem.MinMaxGradient(s_cachedGradA, s_cachedGradB);
 
                         // 파티클 방출 (Emit)
                         int baseEmit = 8 + extraParticles;
@@ -108,6 +123,7 @@ public class PlayerJumpEffect : MonoBehaviour
     private void Init(int combo)
     {
         Material sharedMat = GetSharedJumpMaterial();
+        MaterialPropertyBlock mpb = GetSharedPropertyBlock();
 
         // 1. 도약 지점 충격파 링 생성
         GameObject ringGo = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
@@ -127,7 +143,7 @@ public class PlayerJumpEffect : MonoBehaviour
         if (rend != null)
         {
             rend.sharedMaterial = sharedMat;
-            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            mpb.Clear();
             mpb.SetColor("_Color", new Color(0.3f, 0.85f, 1.0f, 0.8f));
             rend.SetPropertyBlock(mpb);
         }
