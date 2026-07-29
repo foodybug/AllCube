@@ -81,6 +81,13 @@ public class PlayerJumpEffect : MonoBehaviour
                 }
             }
 
+            // JumpRing 오브젝트 무력화/제거
+            Transform ringChild = fxInstance.transform.Find("JumpRing");
+            if (ringChild != null)
+            {
+                Destroy(ringChild.gameObject);
+            }
+
             // Combo 비례 파티클 수(+3/combo), 속도 가속 및 각 파티클별 고유 Color Over Time(MinMaxGradient) 적용
             ParticleSystem[] psList = fxInstance.GetComponentsInChildren<ParticleSystem>();
             if (psList != null && psList.Length > 0)
@@ -123,32 +130,8 @@ public class PlayerJumpEffect : MonoBehaviour
     private void Init(int combo)
     {
         Material sharedMat = GetSharedJumpMaterial();
-        MaterialPropertyBlock mpb = GetSharedPropertyBlock();
 
-        // 1. 도약 지점 충격파 링 생성
-        GameObject ringGo = PrimitiveUtil.CreatePrimitive(PrimitiveType.Quad);
-        ringGo.name = "JumpRing";
-        ringGo.transform.SetParent(transform, false);
-        ringGo.transform.localPosition = Vector3.zero;
-        ringGo.transform.localScale = new Vector3(0.4f, 0.4f, 1f);
-
-        Collider col = ringGo.GetComponent<Collider>();
-        if (col != null)
-        {
-            col.enabled = false;
-            Destroy(col);
-        }
-
-        Renderer rend = ringGo.GetComponent<Renderer>();
-        if (rend != null)
-        {
-            rend.sharedMaterial = sharedMat;
-            mpb.Clear();
-            mpb.SetColor("_Color", new Color(0.3f, 0.85f, 1.0f, 0.8f));
-            rend.SetPropertyBlock(mpb);
-        }
-
-        // 2. Combo마다 particle 개수 +3개씩 증가 & 각 particle마다 고유한 Color Over Time 변환 적용
+        // Combo마다 particle 개수 +3개씩 증가 & 각 particle마다 고유한 Color Over Time 변환 적용
         int baseParticleCount = 8;
         int totalParticleCount = baseParticleCount + (combo * 3);
         float speedScale = 1.0f + (combo * 0.25f); // 콤보 당 파티클 속도 25% 가속
