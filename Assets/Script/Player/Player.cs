@@ -14,8 +14,8 @@ public class Player : MonoBehaviour
     [Header("Combo Physics Settings")]
     [SerializeField] private float m_comboJumpForceMultiplier = 0.02f;
     [SerializeField] private float m_maxComboJumpForceBonus = 0.40f;
-    [SerializeField] private float m_comboTorqueMultiplier = 0.16f; // 콤보당 회전 속도 16% 증가 (2배 높임)
-    [SerializeField] private float m_maxComboTorqueBonus = 5.00f;   // 최대 500% 회전 속도 가속 (2배 높임)
+    [SerializeField] private float m_comboTorqueMultiplier = 0.32f; // 콤보당 회전 속도 32% 증가 (기존 대비 2배 추가 상향)
+    [SerializeField] private float m_maxComboTorqueBonus = 10.00f;  // 최대 1000% 회전 속도 가속 (기존 대비 2배 추가 상향)
 
     [Header("Combo Audio Settings")]
     [SerializeField] private string m_jumpSoundPath = "Sound/jump";

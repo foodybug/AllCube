@@ -600,11 +600,6 @@ public class MapManager : MonoBehaviour
 
         AudioManager.Instance.Play("Sound/coin_eff", 0.3f);
 
-        // 보석(Coin) 등급(gradeVal 1~5)에 비례하여 메인 카메라를 아주 잠깐 역동적으로 흔드는 임팩트 적용
-        float shakeDuration = 0.08f + (gradeVal * 0.02f); // 0.10초 ~ 0.18초
-        float shakeIntensity = 0.08f + ((gradeVal - 1) * 0.06f); // 0.08f ~ 0.32f
-        CameraManager.ShakeMainCamera(shakeDuration, shakeIntensity);
-
         m_listCoin.Remove(go);
 
         InfiniteScrollObject scroll = go.GetComponent<InfiniteScrollObject>();
