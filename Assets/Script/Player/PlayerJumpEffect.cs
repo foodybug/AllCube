@@ -40,7 +40,7 @@ public class PlayerJumpEffect : MonoBehaviour
         ringGo.transform.localScale = new Vector3(0.4f, 0.4f, 1f);
 
         Collider col = ringGo.GetComponent<Collider>();
-        if (col != null) Destroy(col);
+        if (col != null) DestroyImmediate(col);
 
         Renderer rend = ringGo.GetComponent<Renderer>();
         if (rend != null)
@@ -62,7 +62,7 @@ public class PlayerJumpEffect : MonoBehaviour
             pCube.transform.localScale = Vector3.one * Random.Range(0.18f, 0.32f);
 
             Collider pCol = pCube.GetComponent<Collider>();
-            if (pCol != null) Destroy(pCol);
+            if (pCol != null) DestroyImmediate(pCol);
 
             Renderer pRend = pCube.GetComponent<Renderer>();
             if (pRend != null)
