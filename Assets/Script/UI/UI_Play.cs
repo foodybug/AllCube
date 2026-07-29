@@ -47,8 +47,9 @@ public class UI_Play : MonoBehaviour
 
     void Start()
     {
-        // 미지정 컴포넌트 자동 복구 및 할당 (Awake에서 수행하나 안전 보완용 호출 유지)
+        // 미지정 컴포넌트 자동 복구 및 9:16 종횡비 / CanvasScaler 정밀 보정
         AutoAssignComponents();
+        EnsurePlayCanvasAndCameraAspect();
 
         if (ui.textPlayInfo != null) ui.textPlayInfo.gameObject.SetActive(false);
         if (ui.textHeight != null) ui.textHeight.gameObject.SetActive(false);
@@ -98,6 +99,7 @@ public class UI_Play : MonoBehaviour
 
     void Update()
     {
+        EnsurePlayCanvasAndCameraAspect();
         bool isPlayState = false;
         if (MainManager.Instance != null)
         {
@@ -769,6 +771,78 @@ public class UI_Play : MonoBehaviour
     }
 
     #endregion button message
+
+    private void EnsurePlayCanvasAndCameraAspect()
+    {
+        Camera cam = CameraManager.GetMainCamera();
+        if (cam != null)
+        {
+            CameraManager.ApplyAspect(cam);
+        }
+        else
+        {
+            CameraManager.EnsureBackgroundClearCamera();
+        }
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        if (canvases != null)
+        {
+            foreach (var canvas in canvases)
+            {
+                if (canvas != null)
+                {
+                    CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+                    if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    scaler.referenceResolution = new Vector2(720, 1280);
+                    scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                    scaler.matchWidthOrHeight = 0.5f;
+
+                    if (cam != null)
+                    {
+                        cam.cullingMask |= (1 << LayerMask.NameToLayer("UI")) | (1 << 5);
+                    }
+
+                    // 9:16 카메라 뷰포트 내부에 UI를 정밀하게 가두기 위한 컨테이너 바인딩
+                    Transform container = canvas.transform.Find("UIViewportContainer");
+                    GameObject containerGo = null;
+                    if (container == null)
+                    {
+                        containerGo = new GameObject("UIViewportContainer", typeof(RectTransform));
+                        containerGo.transform.SetParent(canvas.transform, false);
+                        RectTransform rt = containerGo.GetComponent<RectTransform>();
+                        rt.offsetMin = Vector2.zero;
+                        rt.offsetMax = Vector2.zero;
+
+                        System.Collections.Generic.List<Transform> childrenToMove = new System.Collections.Generic.List<Transform>();
+                        for (int i = 0; i < canvas.transform.childCount; i++)
+                        {
+                            Transform child = canvas.transform.GetChild(i);
+                            if (child != containerGo.transform)
+                            {
+                                childrenToMove.Add(child);
+                            }
+                        }
+                        foreach (Transform child in childrenToMove)
+                        {
+                            child.SetParent(containerGo.transform, false);
+                        }
+                    }
+                    else
+                    {
+                        containerGo = container.gameObject;
+                    }
+
+                    if (containerGo != null)
+                    {
+                        UIViewportEnforcer enforcer = containerGo.GetComponent<UIViewportEnforcer>();
+                        if (enforcer == null) enforcer = containerGo.AddComponent<UIViewportEnforcer>();
+                        enforcer.UpdateViewportBounds();
+                    }
+                }
+            }
+        }
+    }
 
     private void AutoAssignComponents()
     {

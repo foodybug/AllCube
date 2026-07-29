@@ -59,6 +59,7 @@ public class ResultMain : MonoBehaviour
         m_goVirtualCamera.transform.position = Vector3.zero;
 
         CreateBackground();
+        EnsureCanvasAndCameraAspect();
 
         // Result 씬 하단 구글 배너 광고 노출
         if (AdmobManager.Instance != null)
@@ -67,6 +68,74 @@ public class ResultMain : MonoBehaviour
         }
 
         StartCoroutine(SubmitAndRefreshUI_CR());
+    }
+
+    private void EnsureCanvasAndCameraAspect()
+    {
+        Camera cam = CameraManager.GetMainCamera();
+        if (cam != null)
+        {
+            CameraManager.ApplyAspect(cam);
+        }
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        if (canvases != null)
+        {
+            foreach (var canvas in canvases)
+            {
+                if (canvas != null)
+                {
+                    if (cam != null)
+                    {
+                        cam.cullingMask |= (1 << LayerMask.NameToLayer("UI")) | (1 << 5);
+                    }
+
+                    UnityEngine.UI.CanvasScaler scaler = canvas.GetComponent<UnityEngine.UI.CanvasScaler>();
+                    if (scaler == null) scaler = canvas.gameObject.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    scaler.referenceResolution = new Vector2(720, 1280);
+                    scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                    scaler.matchWidthOrHeight = 0.5f;
+
+                    // 9:16 카메라 뷰포트 내부에 UI를 정밀하게 가두기 위한 컨테이너 바인딩
+                    Transform container = canvas.transform.Find("UIViewportContainer");
+                    GameObject containerGo = null;
+                    if (container == null)
+                    {
+                        containerGo = new GameObject("UIViewportContainer", typeof(RectTransform));
+                        containerGo.transform.SetParent(canvas.transform, false);
+                        RectTransform rt = containerGo.GetComponent<RectTransform>();
+                        rt.offsetMin = Vector2.zero;
+                        rt.offsetMax = Vector2.zero;
+
+                        System.Collections.Generic.List<Transform> childrenToMove = new System.Collections.Generic.List<Transform>();
+                        for (int i = 0; i < canvas.transform.childCount; i++)
+                        {
+                            Transform child = canvas.transform.GetChild(i);
+                            if (child != containerGo.transform)
+                            {
+                                childrenToMove.Add(child);
+                            }
+                        }
+                        foreach (Transform child in childrenToMove)
+                        {
+                            child.SetParent(containerGo.transform, false);
+                        }
+                    }
+                    else
+                    {
+                        containerGo = container.gameObject;
+                    }
+
+                    if (containerGo != null)
+                    {
+                        UIViewportEnforcer enforcer = containerGo.GetComponent<UIViewportEnforcer>();
+                        if (enforcer == null) enforcer = containerGo.AddComponent<UIViewportEnforcer>();
+                        enforcer.UpdateViewportBounds();
+                    }
+                }
+            }
+        }
     }
 
 
@@ -98,11 +167,11 @@ public class ResultMain : MonoBehaviour
 
         Color farColor = Color.HSVToRGB(slowTimeHue, 0.5f, 0.28f);
         
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam != null)
         {
+            CameraManager.ApplyAspect(cam);
             cam.backgroundColor = farColor;
         }
 
@@ -265,7 +334,7 @@ public class ResultMain : MonoBehaviour
         {
             // 1. 서버 실시간 랭킹 연동 성공
             string suffix = GetRankSuffix(MainManager.lastServerRank);
-            rankHeader = string.Format("<size=38><color=yellow><b>Rank: {0}{1} (Top {2:F2}%)</b></color></size>", 
+            rankHeader = string.Format("<size=22><color=yellow><b>Rank: {0}{1} (Top {2:F2}%)</b></color></size>", 
                 MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
             leaderboardBody = m_serverLeaderboardText;
         }
@@ -273,13 +342,13 @@ public class ResultMain : MonoBehaviour
         {
             // 2. 서버 연동 실패 (최종 로컬 폴백)
             string rankStr = GetWorldRankString(MainManager.lastMaxHeight);
-            rankHeader = string.Format("<size=38><color=yellow><b>{0}</b></color></size>", rankStr);
+            rankHeader = string.Format("<size=22><color=yellow><b>{0}</b></color></size>", rankStr);
             leaderboardBody = "Server offline. Shown local estimation.";
         }
         else
         {
             // 3. 서버 응답 대기 상태 (Connecting...)
-            rankHeader = "<size=38><color=gray><b>Connecting Server...</b></color></size>";
+            rankHeader = "<size=22><color=gray><b>Connecting Server...</b></color></size>";
             leaderboardBody = "Loading global leaderboard rankings...";
         }
 
@@ -328,8 +397,10 @@ public class ResultMain : MonoBehaviour
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();
                         if (res.leaderboardWindow != null && res.leaderboardWindow.Count > 0)
                         {
+                            int entryCount = 0;
                             foreach (var entry in res.leaderboardWindow)
                             {
+                                if (entryCount >= 5) break; // 최대 5개 항목만 텍스트 오버플로우 방지용 표시
                                 string suffix = GetRankSuffix(entry.rank);
                                 string nameStr = entry.deviceId;
                                 if (nameStr.Length > 8)
@@ -339,12 +410,13 @@ public class ResultMain : MonoBehaviour
 
                                 if (entry.isSelf)
                                 {
-                                    sb.AppendLine(string.Format("<color=yellow><b>▶ {0}{1}  YOU  {2}m ◀</b></color>", entry.rank, suffix, entry.height));
+                                    sb.AppendLine(string.Format("<color=yellow><b>▶ {0}{1} YOU {2}m ◀</b></color>", entry.rank, suffix, entry.height));
                                 }
                                 else
                                 {
                                     sb.AppendLine(string.Format("{0}{1}  {2}  {3}m", entry.rank, suffix, nameStr, entry.height));
                                 }
+                                entryCount++;
                             }
                         }
                         else
@@ -421,8 +493,7 @@ public class ResultMain : MonoBehaviour
         m_goBackgroundContainer.transform.parent = null;
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(m_goBackgroundContainer, UnityEngine.SceneManagement.SceneManager.GetActiveScene());
 
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam == null)
         {
@@ -570,8 +641,7 @@ public class ResultMain : MonoBehaviour
         }
         m_playerMaterials.Clear();
 
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam != null)
         {

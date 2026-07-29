@@ -14,8 +14,8 @@ public class Player : MonoBehaviour
     [Header("Combo Physics Settings")]
     [SerializeField] private float m_comboJumpForceMultiplier = 0.02f;
     [SerializeField] private float m_maxComboJumpForceBonus = 0.40f;
-    [SerializeField] private float m_comboTorqueMultiplier = 0.08f; // 콤보당 회전 속도 8% 증가
-    [SerializeField] private float m_maxComboTorqueBonus = 2.50f;   // 최대 250% 회전 속도 가속
+    [SerializeField] private float m_comboTorqueMultiplier = 0.16f; // 콤보당 회전 속도 16% 증가 (2배 높임)
+    [SerializeField] private float m_maxComboTorqueBonus = 5.00f;   // 최대 500% 회전 속도 가속 (2배 높임)
 
     [Header("Combo Audio Settings")]
     [SerializeField] private string m_jumpSoundPath = "Sound/jump";
@@ -177,6 +177,14 @@ public class Player : MonoBehaviour
 
                     m_rb.AddForce(new Vector3(moveX * amountX, finalJumpForce, 0) * Time.deltaTime, ForceMode.Impulse);
                     m_rb.AddTorque(new Vector3(0, 0, -moveX * finalTorque) * Time.deltaTime, ForceMode.Impulse);
+
+                    // 플레이어 점프 도약 이펙트 즉시 격발
+                    PlayerJumpEffect.Spawn(transform.position);
+                    if (MapManager.Instance != null && MapManager.Instance.goCubeEffSrc != null)
+                    {
+                        GameObject goEff = Instantiate(MapManager.Instance.goCubeEffSrc);
+                        goEff.transform.position = transform.position;
+                    }
 
                     float pitch = 1.0f + Mathf.Min(combo * m_comboPitchMultiplier, m_maxComboPitchBonus);
                     AudioManager.Instance.Play(m_jumpSoundPath, m_jumpSoundVolume, pitch);

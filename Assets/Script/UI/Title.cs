@@ -178,8 +178,7 @@ public class Title : MonoBehaviour
 
         Color farColor = Color.HSVToRGB(slowTimeHue, 0.5f, 0.28f);
         
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam != null)
         {
@@ -317,8 +316,7 @@ public class Title : MonoBehaviour
         m_goBackgroundContainer.transform.parent = null;
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(m_goBackgroundContainer, UnityEngine.SceneManagement.SceneManager.GetActiveScene());
 
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam == null)
         {
@@ -448,7 +446,8 @@ public class Title : MonoBehaviour
                 ? cameraX - Random.Range(3.8f, 6.8f)
                 : cameraX + Random.Range(3.8f, 6.8f);
 
-            float startY = cameraT.position.y - 12.0f - 6.0f - (i * 12.0f);
+            float camBottomY = (cam != null) ? (cam.transform.position.y - cam.orthographicSize) : (cameraT.position.y - 12.0f);
+            float startY = camBottomY - 4.5f - (i * 2.0f);
             float posZ = Random.Range(6.0f, 8.5f); // 전면 밀착 레이어에 소환
             pGo.transform.position = new Vector3(startX, startY, posZ);
 
@@ -510,8 +509,7 @@ public class Title : MonoBehaviour
         }
         m_playerMaterials.Clear();
 
-        Camera cam = Camera.main;
-        if (cam == null) cam = FindFirstObjectByType<Camera>();
+        Camera cam = CameraManager.GetMainCamera();
         
         if (cam != null)
         {

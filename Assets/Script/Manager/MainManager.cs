@@ -80,9 +80,15 @@ public class MainManager : MonoBehaviour
         m_instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // 해상도 1280x720 16:9 고정 (화면 찌그러짐 왜곡 완전 방지)
+        // 해상도 720x1280 세로(Portrait) 9:16 고정 및 회전 고정
+        Screen.orientation = ScreenOrientation.Portrait;
+        Screen.autorotateToLandscapeLeft = false;
+        Screen.autorotateToLandscapeRight = false;
+        Screen.autorotateToPortrait = true;
+        Screen.autorotateToPortraitUpsideDown = true;
+
 #if UNITY_STANDALONE || UNITY_EDITOR
-        Screen.SetResolution(1280, 720, FullScreenMode.Windowed);
+        Screen.SetResolution(720, 1280, FullScreenMode.Windowed);
 #endif
 
         // 모바일 최적화: 60 FPS 고정 및 화면 슬립(자동 꺼짐) 방지
@@ -107,6 +113,71 @@ public class MainManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         Debug.Log("[MainManager Debug] OnSceneLoaded triggered. Active Scene: " + scene.name + ", StartWithFadeIn: " + StartWithFadeIn);
+
+        Camera mainCam = CameraManager.GetMainCamera();
+        if (mainCam != null)
+        {
+            CameraManager.ApplyAspect(mainCam);
+        }
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        if (canvases != null)
+        {
+            foreach (var canvas in canvases)
+            {
+                if (canvas != null)
+                {
+                    CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+                    if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    scaler.referenceResolution = new Vector2(720, 1280);
+                    scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                    scaler.matchWidthOrHeight = 0.5f;
+
+                    if (mainCam != null)
+                    {
+                        mainCam.cullingMask |= (1 << LayerMask.NameToLayer("UI")) | (1 << 5);
+                    }
+
+                    // 9:16 카메라 뷰포트 내부에 UI를 정밀하게 가두기 위한 컨테이너 바인딩
+                    Transform container = canvas.transform.Find("UIViewportContainer");
+                    GameObject containerGo = null;
+                    if (container == null)
+                    {
+                        containerGo = new GameObject("UIViewportContainer", typeof(RectTransform));
+                        containerGo.transform.SetParent(canvas.transform, false);
+                        RectTransform rt = containerGo.GetComponent<RectTransform>();
+                        rt.offsetMin = Vector2.zero;
+                        rt.offsetMax = Vector2.zero;
+
+                        System.Collections.Generic.List<Transform> childrenToMove = new System.Collections.Generic.List<Transform>();
+                        for (int i = 0; i < canvas.transform.childCount; i++)
+                        {
+                            Transform child = canvas.transform.GetChild(i);
+                            if (child != containerGo.transform)
+                            {
+                                childrenToMove.Add(child);
+                            }
+                        }
+                        foreach (Transform child in childrenToMove)
+                        {
+                            child.SetParent(containerGo.transform, false);
+                        }
+                    }
+                    else
+                    {
+                        containerGo = container.gameObject;
+                    }
+
+                    if (containerGo != null)
+                    {
+                        UIViewportEnforcer enforcer = containerGo.GetComponent<UIViewportEnforcer>();
+                        if (enforcer == null) enforcer = containerGo.AddComponent<UIViewportEnforcer>();
+                        enforcer.UpdateViewportBounds();
+                    }
+                }
+            }
+        }
 
 
         if (scene.name == "Title")

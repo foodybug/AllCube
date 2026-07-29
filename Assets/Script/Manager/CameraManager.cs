@@ -84,6 +84,27 @@ public class CameraManager : MonoBehaviour
         mainCamera.orthographicSize = Mathf.MoveTowards(mainCamera.orthographicSize, targetZoomFactor, fDelta);// * Time.deltaTime);
     }
 
+    private static float s_shakeTimer = 0f;
+    private static float s_shakeIntensity = 0f;
+
+    public static void ShakeMainCamera(float duration, float intensity)
+    {
+        s_shakeTimer = Mathf.Max(s_shakeTimer, duration);
+        s_shakeIntensity = Mathf.Max(s_shakeIntensity, intensity);
+    }
+
+    void LateUpdate()
+    {
+        if (mainCamera == null) return;
+
+        if (s_shakeTimer > 0f)
+        {
+            s_shakeTimer -= Time.deltaTime;
+            Vector2 randomShake = Random.insideUnitCircle * s_shakeIntensity;
+            mainCamera.transform.position += new Vector3(randomShake.x, randomShake.y, 0f);
+        }
+    }
+
     public void Init()
     {
         if (mainCamera == null)
@@ -98,30 +119,102 @@ public class CameraManager : MonoBehaviour
 
     public void EnforceAspectRatio()
     {
-        if (mainCamera == null) return;
+        ApplyAspect(mainCamera);
+    }
 
-        float targetAspect = 16.0f / 9.0f; // 1280x720 고정 16:9 종횡비
+    private static Camera s_backgroundClearCamera = null;
+
+    private static Camera s_cachedMainCam = null;
+
+    public static Camera GetMainCamera()
+    {
+        EnsureBackgroundClearCamera();
+
+        if (s_cachedMainCam != null && s_cachedMainCam.gameObject.activeInHierarchy && s_cachedMainCam.name != "BackgroundClearCamera")
+        {
+            return s_cachedMainCam;
+        }
+
+        Camera cam = Camera.main;
+        if (cam != null && cam.name != "BackgroundClearCamera")
+        {
+            s_cachedMainCam = cam;
+            return s_cachedMainCam;
+        }
+
+        Camera[] allCams = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+        if (allCams != null)
+        {
+            foreach (var c in allCams)
+            {
+                if (c != null && c.name != "BackgroundClearCamera")
+                {
+                    s_cachedMainCam = c;
+                    return s_cachedMainCam;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static void EnsureBackgroundClearCamera()
+    {
+        if (s_backgroundClearCamera == null)
+        {
+            GameObject bgCamGo = GameObject.Find("BackgroundClearCamera");
+            if (bgCamGo == null)
+            {
+                bgCamGo = new GameObject("BackgroundClearCamera");
+                Object.DontDestroyOnLoad(bgCamGo);
+                s_backgroundClearCamera = bgCamGo.AddComponent<Camera>();
+            }
+            else
+            {
+                s_backgroundClearCamera = bgCamGo.GetComponent<Camera>();
+            }
+
+            bgCamGo.tag = "Untagged";
+            s_backgroundClearCamera.clearFlags = CameraClearFlags.SolidColor;
+            s_backgroundClearCamera.backgroundColor = Color.black;
+            s_backgroundClearCamera.cullingMask = 0; // 3D 레벨 객체 그리지 않고 순수 레터박스 포함 전화면 지우기만 수행
+            s_backgroundClearCamera.depth = -100; // 최하단에서 전 화면(Letterbox 포함) 매 프레임 클리어
+            s_backgroundClearCamera.rect = new Rect(0, 0, 1, 1);
+            s_backgroundClearCamera.allowHDR = false;
+            s_backgroundClearCamera.allowMSAA = false;
+        }
+        else
+        {
+            s_backgroundClearCamera.cullingMask = 0; // 혹시 타 스크립트에서 cullingMask가 변경되었더라도 0으로 강제 복구
+        }
+    }
+
+    public static void ApplyAspect(Camera cam)
+    {
+        if (cam == null) return;
+        EnsureBackgroundClearCamera();
+
+        float targetAspect = 9.0f / 16.0f; // 720x1280 고정 세로(Portrait) 9:16 종횡비
         float currentAspect = (float)Screen.width / Screen.height;
         float scaleHeight = currentAspect / targetAspect;
 
         if (scaleHeight < 1.0f)
         {
-            Rect rect = mainCamera.rect;
+            Rect rect = cam.rect;
             rect.width = 1.0f;
             rect.height = scaleHeight;
             rect.x = 0;
             rect.y = (1.0f - scaleHeight) / 2.0f;
-            mainCamera.rect = rect;
+            cam.rect = rect;
         }
         else
         {
             float scaleWidth = 1.0f / scaleHeight;
-            Rect rect = mainCamera.rect;
+            Rect rect = cam.rect;
             rect.width = scaleWidth;
             rect.height = 1.0f;
             rect.x = (1.0f - scaleWidth) / 2.0f;
             rect.y = 0;
-            mainCamera.rect = rect;
+            cam.rect = rect;
         }
     }
 

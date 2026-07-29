@@ -121,37 +121,36 @@ public class RhythmicPlayerCube : MonoBehaviour
             ExecuteJump();
         }
 
-        // 3. 카메라 Frustum(절두체) 뷰포트 외곽 이탈 감지 및 무한 순환 리스폰
-        if (m_camera != null)
+        // 3. 메인 카메라의 3D 월드 절두체(Frustum) 및 높이 기준 외곽 이탈 감지 및 무한 순환 리스폰
+        Camera mainCam = CameraManager.GetMainCamera();
+        if (mainCam != null)
         {
+            float halfHeight = mainCam.orthographicSize;
+            float camCenterY = mainCam.transform.position.y;
+            float camCenterX = mainCam.transform.position.x;
+
+            // 카메라 상단/하단 절두체 월드 경계
+            float camTopWorldY = camCenterY + halfHeight;
+            float camBottomWorldY = camCenterY - halfHeight;
+
+            // 절두체 위/아래 공간 한계 (상단 +15m, 하단 -10m)
+            float upperLimitY = camTopWorldY + 15.0f;
+            float lowerLimitY = camBottomWorldY - 10.0f;
+
             Vector3 pos = transform.position;
-            Vector3 viewportPos = m_camera.WorldToViewportPoint(pos);
 
-            // 화면 위(1.25f 이상)로 솟구쳐 나가거나, 하단(-0.45f 이하), 또는 좌우 외곽(-0.25f / 1.25f)으로 나간 경우
-            if (viewportPos.y > 1.25f || viewportPos.y < -0.45f || viewportPos.x < -0.25f || viewportPos.x > 1.25f || viewportPos.z < 0f)
+            // 화면 절두체 상단 한계 위로 솟구쳤거나, 하단 한계 아래로 완전 떨어진 경우 리스폰
+            if (pos.y > upperLimitY || pos.y < lowerLimitY || Mathf.Abs(pos.x - camCenterX) > 25.0f)
             {
-                // [중앙 로고 가림 방지 - 뷰포트 좌우 날개 가장자리 영역 지정]
+                // [중앙 로고 영역 가림 방지 - 좌우 날개 가로 위치 선택]
                 bool spawnOnLeft = (Random.value > 0.5f);
-                float targetViewportX = spawnOnLeft 
-                    ? Random.Range(0.01f, 0.26f) 
-                    : Random.Range(0.74f, 0.99f);
+                float spawnX = spawnOnLeft
+                    ? camCenterX - Random.Range(3.8f, 6.5f)
+                    : camCenterX + Random.Range(3.8f, 6.5f);
 
-                // 화면 바로 아래(-0.15f)에서 점프하며 솟구쳐 올라오도록 지정
-                float targetViewportY = -0.15f;
-                float targetZ = Random.Range(6.0f, 8.5f);
-
-                Vector3 spawnWorldPos = m_camera.ViewportToWorldPoint(new Vector3(targetViewportX, targetViewportY, targetZ));
-                ResetParams(spawnWorldPos.x, spawnWorldPos.y, false);
-            }
-        }
-        else if (m_cameraTransform != null)
-        {
-            float camY = m_cameraTransform.position.y;
-            if (transform.position.y > camY + 45f || transform.position.y < camY - 45f)
-            {
-                float newY = camY - Random.Range(15f, 25f);
-                float newX = Random.Range(-20f, 20f);
-                ResetParams(newX, newY, false);
+                // 카메라 절두체 하단 경계(camBottomWorldY) 바로 아래(-3.5m ~ -5.5m)에서 자연스럽게 도약 리스폰!
+                float spawnY = camBottomWorldY - Random.Range(3.5f, 5.5f);
+                ResetParams(spawnX, spawnY, false);
             }
         }
     }
@@ -162,14 +161,15 @@ public class RhythmicPlayerCube : MonoBehaviour
         m_rb.isKinematic = false; // 도약 격발 시 Kinematic 해제하여 물리 운동 가동!
         m_rb.useGravity = true;
 
-        m_rb.linearVelocity = new Vector3(0f, 3.6f, 0f);
+        m_rb.linearVelocity = Vector3.zero;
         m_rb.angularVelocity = Vector3.zero;
 
-        float angleOffset = Random.Range(13.0f, 25.0f) * m_jumpDir;
+        float angleOffset = Random.Range(10.0f, 22.0f) * m_jumpDir;
         Vector3 jumpDir = Quaternion.Euler(0f, 0f, angleOffset) * Vector3.up;
 
-        float jumpForceMagnitude = Random.Range(3.6f, 4.8f);
-        float torqueVal = Random.Range(1.8f, 2.8f);
+        // 카메라 절두체 내부로 크게 솟구쳐 오르는 강력한 점프 임펄스 힘 (14.0f ~ 18.0f)
+        float jumpForceMagnitude = Random.Range(14.0f, 18.0f);
+        float torqueVal = Random.Range(12.0f, 20.0f);
 
         m_rb.AddForce(jumpDir * jumpForceMagnitude, ForceMode.Impulse);
 
