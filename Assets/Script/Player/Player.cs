@@ -187,7 +187,11 @@ public class Player : MonoBehaviour
                         Collider[] effCols = goEff.GetComponentsInChildren<Collider>();
                         foreach (var c in effCols)
                         {
-                            if (c != null) DestroyImmediate(c);
+                            if (c != null)
+                            {
+                                c.enabled = false;
+                                Destroy(c);
+                            }
                         }
                     }
 
