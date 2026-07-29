@@ -1,11 +1,25 @@
 using UnityEngine;
 
 /// <summary>
-/// 플레이어가 점프할 때 해당 도약 위치에 즉각 생성되는 다이내믹 펄스/파티클 점프 이펙트 (0-GC / MaterialPropertyBlock 최적화 버전)
+/// 플레이어가 점프할 때 해당 도약 위치에 즉각 생성되는 점프 파티클 이펙트
+/// Prefab/FX/FX_PlayerJump 프리팹을 우선 로드하며, combo 당 파티클 개수 +3 증가 및 파티클 속도(velocity) 가속을 실시간 적용합니다.
 /// </summary>
 public class PlayerJumpEffect : MonoBehaviour
 {
+    private static GameObject s_jumpEffectPrefab = null;
     private static Material s_sharedJumpMat = null;
+
+    public static GameObject GetJumpPrefab()
+    {
+        if (s_jumpEffectPrefab == null)
+        {
+            s_jumpEffectPrefab = Resources.Load<GameObject>("Prefab/FX/FX_PlayerJump");
+            if (s_jumpEffectPrefab == null) s_jumpEffectPrefab = Resources.Load<GameObject>("Prefabs/FX/FX_PlayerJump");
+            if (s_jumpEffectPrefab == null) s_jumpEffectPrefab = Resources.Load<GameObject>("FX/FX_PlayerJump");
+            if (s_jumpEffectPrefab == null) s_jumpEffectPrefab = Resources.Load<GameObject>("FX_PlayerJump");
+        }
+        return s_jumpEffectPrefab;
+    }
 
     public static Material GetSharedJumpMaterial()
     {
@@ -22,13 +36,58 @@ public class PlayerJumpEffect : MonoBehaviour
 
     public static void Spawn(Vector3 jumpPos)
     {
-        GameObject effectGo = new GameObject("PlayerJumpEffect");
-        effectGo.transform.position = jumpPos;
-        PlayerJumpEffect comp = effectGo.AddComponent<PlayerJumpEffect>();
-        comp.Init();
+        int combo = (JumpIntervalTracker.Instance != null) ? JumpIntervalTracker.Instance.ComboCount : 0;
+        GameObject prefab = GetJumpPrefab();
+
+        if (prefab != null)
+        {
+            GameObject fxInstance = Instantiate(prefab, jumpPos, Quaternion.identity);
+
+            // 콜라이더 무력화 (플레이어 도약 물리 충돌 차단)
+            Collider[] cols = fxInstance.GetComponentsInChildren<Collider>();
+            foreach (var c in cols)
+            {
+                if (c != null)
+                {
+                    c.enabled = false;
+                    Destroy(c);
+                }
+            }
+
+            // Combo 비례 파티클 수(+3/combo) 및 속도(velocity) 가속 적용
+            ParticleSystem[] psList = fxInstance.GetComponentsInChildren<ParticleSystem>();
+            if (psList != null && psList.Length > 0)
+            {
+                float speedMultiplier = 1.0f + (combo * 0.20f); // 콤보당 속도 20% 상승
+                int extraParticles = combo * 3;                // 콤보당 파티클 3개 추가
+
+                foreach (var ps in psList)
+                {
+                    if (ps != null)
+                    {
+                        var main = ps.main;
+                        main.simulationSpeed *= speedMultiplier;
+
+                        // 파티클 즉시 추가 방출 (Emit)
+                        int baseEmit = 8 + extraParticles;
+                        ps.Emit(baseEmit);
+                    }
+                }
+            }
+
+            Destroy(fxInstance, 1.5f);
+        }
+        else
+        {
+            // 프리팹이 아직 미등록된 상황에서의 예체 0-GC 도약 파티클 시스템
+            GameObject effectGo = new GameObject("PlayerJumpEffect");
+            effectGo.transform.position = jumpPos;
+            PlayerJumpEffect comp = effectGo.AddComponent<PlayerJumpEffect>();
+            comp.Init(combo);
+        }
     }
 
-    private void Init()
+    private void Init(int combo)
     {
         Material sharedMat = GetSharedJumpMaterial();
 
@@ -55,9 +114,12 @@ public class PlayerJumpEffect : MonoBehaviour
             rend.SetPropertyBlock(mpb);
         }
 
-        // 2. 도약 사방 분산 파티클 큐브 8개 흩날림
-        int particleCount = 8;
-        for (int i = 0; i < particleCount; i++)
+        // 2. Combo마다 particle 개수 +3개씩 증가 & velocity도 가속 적용
+        int baseParticleCount = 8;
+        int totalParticleCount = baseParticleCount + (combo * 3);
+        float speedScale = 1.0f + (combo * 0.25f); // 콤보 당 파티클 속도 25% 가속
+
+        for (int i = 0; i < totalParticleCount; i++)
         {
             GameObject pCube = PrimitiveUtil.CreatePrimitive(PrimitiveType.Cube);
             pCube.name = "JumpParticle_" + i;
@@ -78,8 +140,8 @@ public class PlayerJumpEffect : MonoBehaviour
                 pRend.sharedMaterial = sharedMat;
             }
 
-            float angle = (i * (360f / particleCount) + Random.Range(-15f, 15f)) * Mathf.Deg2Rad;
-            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(3f, 6f), Mathf.Sin(angle) * Random.Range(2f, 5f) + 1.5f, Random.Range(-1f, 1f));
+            float angle = (i * (360f / totalParticleCount) + Random.Range(-15f, 15f)) * Mathf.Deg2Rad;
+            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(3f, 6f), Mathf.Sin(angle) * Random.Range(2f, 5f) + 1.5f, Random.Range(-1f, 1f)) * speedScale;
 
             JumpParticleMover mover = pCube.AddComponent<JumpParticleMover>();
             mover.velocity = vel;
