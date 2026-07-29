@@ -68,7 +68,8 @@ public class PlayerJumpEffect : MonoBehaviour
 
         if (prefab != null)
         {
-            GameObject fxInstance = Instantiate(prefab, jumpPos, Quaternion.identity);
+            // X축 180도 회전시켜 파티클 방출 방향을 아래쪽으로 분사
+            GameObject fxInstance = Instantiate(prefab, jumpPos, Quaternion.Euler(180f, 0f, 0f));
 
             // 콜라이더 무력화 (플레이어 도약 물리 충돌 차단 - enabled=false 후 비동기 Destroy)
             Collider[] cols = fxInstance.GetComponentsInChildren<Collider>();
@@ -157,8 +158,10 @@ public class PlayerJumpEffect : MonoBehaviour
                 pRend.sharedMaterial = sharedMat;
             }
 
-            float angle = (i * (360f / totalParticleCount) + Random.Range(-15f, 15f)) * Mathf.Deg2Rad;
-            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(3f, 6f), Mathf.Sin(angle) * Random.Range(2f, 5f) + 1.5f, Random.Range(-1f, 1f)) * speedScale;
+            // 하단 180도 부채꼴 각도(200도 ~ 340도)로 아래쪽을 향해 힘차게 분사
+            float angle = Random.Range(200f, 340f) * Mathf.Deg2Rad;
+            float speedY = -Mathf.Abs(Mathf.Sin(angle)) * Random.Range(3.5f, 7.5f) - 2.0f;
+            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(2.5f, 5.5f), speedY, Random.Range(-1f, 1f)) * speedScale;
 
             JumpParticleMover mover = pCube.AddComponent<JumpParticleMover>();
             mover.velocity = vel;
