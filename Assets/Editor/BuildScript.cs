@@ -4,35 +4,41 @@ using System.IO;
 
 public class BuildScript
 {
+    [MenuItem("Build/Build Google Play AAB (App Bundle Release)", false, 0)]
+    [MenuItem("Tools/Build Google Play AAB (App Bundle Release)", false, 0)]
+    public static void BuildAndroidAABRelease()
+    {
+        EditorUserBuildSettings.buildAppBundle = true;
+        PerformAndroidBuild(BuildOptions.None, isAAB: true);
+    }
+
     [MenuItem("Build/Build Android APK (Development Debug)", false, 1)]
     [MenuItem("Tools/Build Android APK (Development Debug)", false, 1)]
     public static void BuildAndroidAPKDev()
     {
-        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.ConnectWithProfiler);
+        EditorUserBuildSettings.buildAppBundle = false;
+        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.ConnectWithProfiler, isAAB: false);
     }
 
     [MenuItem("Build/Build & Run Android APK (Debug)", false, 2)]
     [MenuItem("Tools/Build & Run Android APK (Debug)", false, 2)]
     public static void BuildAndRunAndroidAPKDev()
     {
-        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.AutoRunPlayer);
+        EditorUserBuildSettings.buildAppBundle = false;
+        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging | BuildOptions.AutoRunPlayer, isAAB: false);
     }
 
     [MenuItem("Build/Build Android APK (Release)", false, 3)]
     [MenuItem("Tools/Build Android APK (Release)", false, 3)]
     public static void BuildAndroidAPKRelease()
     {
-        PerformAndroidBuild(BuildOptions.None);
+        EditorUserBuildSettings.buildAppBundle = false;
+        PerformAndroidBuild(BuildOptions.None, isAAB: false);
     }
 
-    public static void PerformAndroidBuild()
+    public static void PerformAndroidBuild(BuildOptions buildOptions, bool isAAB = false)
     {
-        PerformAndroidBuild(BuildOptions.Development | BuildOptions.AllowDebugging);
-    }
-
-    public static void PerformAndroidBuild(BuildOptions buildOptions)
-    {
-        Debug.Log($"[BuildScript] Starting Android Build ({buildOptions})...");
+        Debug.Log($"[BuildScript] Starting Android Build (IsAAB: {isAAB}, Options: {buildOptions})...");
 
         // 안드로이드 타겟 플랫폼 스위치 보장
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
@@ -76,7 +82,7 @@ public class BuildScript
         {
             Directory.CreateDirectory(buildDirectory);
         }
-        string buildFileName = "AllCube.apk";
+        string buildFileName = isAAB ? "AllCube_Release.aab" : "AllCube.apk";
         string buildPath = Path.Combine(buildDirectory, buildFileName);
         string fullPath = Path.GetFullPath(buildPath);
 
