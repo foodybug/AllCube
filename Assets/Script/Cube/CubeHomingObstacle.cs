@@ -94,8 +94,8 @@ public class CubeHomingObstacle : MonoBehaviour
 
         float distance = Vector3.Distance(currentPos, targetPos);
 
-        // 플레이어 직후면 하단으로 지나쳐 떨어지거나(22m 이하) 감지 한계를 벗어나면 자동 소거
-        if (currentPos.y < targetPos.y - 22.0f || distance > 45.0f)
+        // 플레이어가 하단으로 멀리 지나친 경우(30m 이하)만 자동 소거 (상단 사전 생성된 블록 파괴 방지)
+        if (currentPos.y < targetPos.y - 30.0f)
         {
             Util.MyDestroy(gameObject);
             return;
