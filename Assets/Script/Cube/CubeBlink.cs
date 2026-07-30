@@ -19,11 +19,6 @@ public class CubeBlink : MonoBehaviour
         m_renderer = GetComponent<Renderer>();
         m_collider = GetComponent<Collider>();
 
-        if (GetComponent<EnemyGlitchTextureEffect>() == null)
-        {
-            gameObject.AddComponent<EnemyGlitchTextureEffect>();
-        }
-
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null) Destroy(rb);
     }

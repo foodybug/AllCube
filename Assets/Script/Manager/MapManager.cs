@@ -485,22 +485,27 @@ public class MapManager : MonoBehaviour
                     CubeJumpZero comp = go.AddComponent<CubeJumpZero>();
                     comp.isBoundaryWall = false;
                 }
+                EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Blink:
                 go.AddComponent<CubeBlink>();
+                EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Laser:
                 go.AddComponent<CubeLaser>();
+                EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Stationary:
                 go.AddComponent<CubeStationaryObstacle>();
+                EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Homing:
                 go.AddComponent<CubeHomingObstacle>();
+                EnemyGlitchTextureEffect.AttachTo(go);
                 break;
         }
 
@@ -939,6 +944,7 @@ public class MapManager : MonoBehaviour
             }
 
             CubeFastObstacle fastObstComp = flyingFastCube.AddComponent<CubeFastObstacle>();
+            EnemyGlitchTextureEffect.AttachTo(flyingFastCube);
             if (fastObstComp != null)
             {
                 fastObstComp.InitFlying(finalSpeed, playerGo != null ? playerGo.transform : null);

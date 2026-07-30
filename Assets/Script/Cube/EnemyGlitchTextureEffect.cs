@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// 적/장애물 블록 전용 1프레임 글리치 텍스처 효과 컴포넌트
+/// 적/장애물 블록 전용 1프레임 글리치 텍스처 효과 컴포넌트 (중앙 집중형 디커플링 구조)
 /// 초당 기본 5% 확률로 바닥의 글리치 텍스처로 1프레임만 바뀝니다.
 /// Combo가 높아질수록 초당 확률이 상향되어 최대 20%까지 증가합니다. (0-GC MaterialPropertyBlock 구현)
 /// </summary>
@@ -14,6 +14,17 @@ public class EnemyGlitchTextureEffect : MonoBehaviour
     private static readonly int s_mainTexPropId = Shader.PropertyToID("_MainTex");
 
     private bool m_isGlitching = false;
+
+    public static EnemyGlitchTextureEffect AttachTo(GameObject go)
+    {
+        if (go == null) return null;
+        EnemyGlitchTextureEffect effect = go.GetComponent<EnemyGlitchTextureEffect>();
+        if (effect == null)
+        {
+            effect = go.AddComponent<EnemyGlitchTextureEffect>();
+        }
+        return effect;
+    }
 
     void Awake()
     {

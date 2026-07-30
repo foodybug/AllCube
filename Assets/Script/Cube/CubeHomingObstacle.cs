@@ -21,11 +21,6 @@ public class CubeHomingObstacle : MonoBehaviour
     {
         m_renderer = GetComponent<Renderer>();
 
-        if (GetComponent<EnemyGlitchTextureEffect>() == null)
-        {
-            gameObject.AddComponent<EnemyGlitchTextureEffect>();
-        }
-
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
