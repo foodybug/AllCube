@@ -173,22 +173,8 @@ public class Player : MonoBehaviour
                     m_rb.AddForce(new Vector3(moveX * amountX, finalJumpForce, 0) * Time.deltaTime, ForceMode.Impulse);
                     m_rb.AddTorque(new Vector3(0, 0, -moveX * finalTorque) * Time.deltaTime, ForceMode.Impulse);
 
-                    // 플레이어 점프 도약 이펙트 즉시 격발 (콜라이더 물리 충돌 100% 차단)
+                    // 플레이어 점프 도약 이펙트 즉시 격발
                     PlayerJumpEffect.Spawn(transform.position);
-                    if (MapManager.Instance != null && MapManager.Instance.goCubeEffSrc != null)
-                    {
-                        GameObject goEff = Instantiate(MapManager.Instance.goCubeEffSrc);
-                        goEff.transform.position = transform.position;
-                        Collider[] effCols = goEff.GetComponentsInChildren<Collider>();
-                        foreach (var c in effCols)
-                        {
-                            if (c != null)
-                            {
-                                c.enabled = false;
-                                Destroy(c);
-                            }
-                        }
-                    }
 
                     float pitch = 1.0f + Mathf.Min(combo * m_comboPitchMultiplier, m_maxComboPitchBonus);
                     AudioManager.Instance.Play(m_jumpSoundPath, m_jumpSoundVolume, pitch);
