@@ -44,15 +44,22 @@ public class CubeHomingObstacle : MonoBehaviour
     {
         if (m_renderer != null && MapManager.Instance != null)
         {
-            m_renderer.sharedMaterial = MapManager.Instance.GetSharedMaterial(8); // 위험 빨간색 머티리얼
-        }
-
-        if (m_renderer != null && m_renderer.material != null)
-        {
-            m_renderer.material.color = m_baseColor;
-            if (m_renderer.material.HasProperty("_Color"))
+            Material sharedMat = MapManager.Instance.GetSharedMaterial(8);
+            if (sharedMat != null)
             {
-                m_renderer.material.SetColor("_Color", m_baseColor);
+                m_renderer.sharedMaterial = sharedMat;
+            }
+
+            Texture[] texCube = MapManager.Instance.texCube;
+            if (texCube != null && texCube.Length > 0)
+            {
+                int randIdx = Random.Range(4, Mathf.Min(8, texCube.Length));
+                if (randIdx < texCube.Length && texCube[randIdx] != null)
+                {
+                    Material homingMat = new Material(sharedMat != null ? sharedMat : m_renderer.material);
+                    homingMat.mainTexture = texCube[randIdx];
+                    m_renderer.material = homingMat;
+                }
             }
         }
     }
