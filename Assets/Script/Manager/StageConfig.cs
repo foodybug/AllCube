@@ -75,9 +75,9 @@ public class StageConfig
                 minBlinkH = minHeight;
             }
 
-            // 느린 추적 장애물 (CubeHomingObstacle): 초반 레벨(Tier 1, Height >= 10m)부터 소수 배치 (간격 24 -> 4)
-            int homingInterval = Mathf.Max(4, Mathf.RoundToInt(Mathf.Lerp(24f, 4f, progress)));
-            int minHomingH = 10;
+            // 느린 추적 장애물 (CubeHomingObstacle): 레벨 전체적으로 3배 배치 증량 (간격 8 -> 2, 최소 높이 4m)
+            int homingInterval = Mathf.Max(2, Mathf.RoundToInt(Mathf.Lerp(8f, 2f, progress)));
+            int minHomingH = 4;
 
             // 코인 생성 간격 및 연속 스폰 이벤트
             int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));

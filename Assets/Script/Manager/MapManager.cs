@@ -880,12 +880,11 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false));
         }
 
-        // 4. 느린 속도로 플레이어를 은밀히 추적해오는 Homing 장애물 생성
+        // 4. 느린 속도로 플레이어를 은밀히 추적해오는 Homing 장애물 생성 (전체 3배 증량 배치)
         int homingInterval = tier.homingObstacleInterval;
         int minHomingY = tier.minHomingHeight;
-        if (!hasObstacle && homingInterval > 0 && y >= minHomingY && y % homingInterval == 0)
+        if (homingInterval > 0 && y >= minHomingY && y % homingInterval == 0)
         {
-            hasObstacle = true;
             int randomX = Random.Range(minX + 2, maxX + 1);
             m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Homing, rowScrollWidth, false));
         }
