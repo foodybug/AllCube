@@ -33,7 +33,8 @@ public class StageDifficultyHolder : MonoBehaviour
         if (difficultyTiers == null || difficultyTiers.Count < 50 ||
            (difficultyTiers.Count > 1 && difficultyTiers[1].minHeight > 12) ||
            (difficultyTiers.Count > 0 && difficultyTiers[0].minSpawnX < -20) ||
-           (difficultyTiers.Count > 0 && difficultyTiers[0].stationaryObstacleInterval == 0))
+           (difficultyTiers.Count > 0 && difficultyTiers[0].stationaryObstacleInterval == 0) ||
+           (difficultyTiers.Count > 0 && difficultyTiers[0].homingObstacleInterval == 0))
         {
             difficultyTiers = StageConfig.GenerateDefault50Tiers();
         }
