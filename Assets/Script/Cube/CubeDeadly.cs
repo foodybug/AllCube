@@ -8,6 +8,11 @@ public class CubeDeadly : MonoBehaviour
         if (col != null) col.isTrigger = false; // 물리 벽
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null) Destroy(rb);
+
+        if (GetComponent<EnemyGlitchTextureEffect>() == null)
+        {
+            gameObject.AddComponent<EnemyGlitchTextureEffect>();
+        }
     }
 
     void Start()

@@ -25,6 +25,56 @@ public class GlitchDeadZoneEffect : MonoBehaviour
     private static readonly Color32 ColorGold = new Color32(255, 183, 3, 255);      // 코인/에너지 골드
     private static readonly Color32 ColorWhite = new Color32(240, 240, 250, 255);
 
+    private static Texture2D s_sharedGlitchTexture = null;
+
+    public static Texture2D SharedGlitchTexture
+    {
+        get
+        {
+            if (s_sharedGlitchTexture == null)
+            {
+                s_sharedGlitchTexture = CreateStaticGlitchTexture();
+            }
+            return s_sharedGlitchTexture;
+        }
+    }
+
+    public static Texture2D CreateStaticGlitchTexture()
+    {
+        int w = 128;
+        int h = 128;
+        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point;
+        tex.wrapMode = TextureWrapMode.Repeat;
+        Color32[] px = new Color32[w * h];
+
+        for (int y = 0; y < h; y++)
+        {
+            Color32 lineBaseColor = ColorDark;
+            bool isGlitchLine = (y % 4 == 0) || (Random.value < 0.18f);
+
+            if (isGlitchLine)
+            {
+                float randVal = Random.value;
+                if (randVal < 0.40f) lineBaseColor = ColorRed;
+                else if (randVal < 0.65f) lineBaseColor = ColorCrimson;
+                else if (randVal < 0.85f) lineBaseColor = ColorCyan;
+                else lineBaseColor = ColorGold;
+            }
+
+            for (int x = 0; x < w; x++)
+            {
+                int idx = y * w + x;
+                if (Random.value < 0.09f) px[idx] = (Random.value < 0.5f) ? ColorRed : ColorCyan;
+                else if (Random.value < 0.03f) px[idx] = ColorGold;
+                else px[idx] = lineBaseColor;
+            }
+        }
+        tex.SetPixels32(px);
+        tex.Apply();
+        return tex;
+    }
+
     private void Awake()
     {
         m_renderer = GetComponent<MeshRenderer>();
@@ -43,14 +93,11 @@ public class GlitchDeadZoneEffect : MonoBehaviour
 
     private void CreateGlitchTexture()
     {
-        m_glitchTexture = new Texture2D(m_width, m_height, TextureFormat.RGBA32, false);
-        m_glitchTexture.filterMode = FilterMode.Point; // 디지탈 픽셀 글리치 느낌을 위해 Point 필터 사용
-        m_glitchTexture.wrapMode = TextureWrapMode.Repeat;
-        m_pixels = new Color32[m_width * m_height];
-
-        GenerateBaseGlitchPattern();
-        m_glitchTexture.SetPixels32(m_pixels);
-        m_glitchTexture.Apply();
+        if (s_sharedGlitchTexture == null)
+        {
+            s_sharedGlitchTexture = CreateStaticGlitchTexture();
+        }
+        m_glitchTexture = s_sharedGlitchTexture;
 
         if (m_material != null)
         {

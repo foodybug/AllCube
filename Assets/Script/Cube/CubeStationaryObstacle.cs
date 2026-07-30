@@ -11,6 +11,11 @@ public class CubeStationaryObstacle : MonoBehaviour
         if (col != null) col.isTrigger = true;
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null) Destroy(rb);
+
+        if (GetComponent<EnemyGlitchTextureEffect>() == null)
+        {
+            gameObject.AddComponent<EnemyGlitchTextureEffect>();
+        }
     }
 
     void Start()

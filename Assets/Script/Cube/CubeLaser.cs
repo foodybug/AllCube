@@ -15,6 +15,11 @@ public class CubeLaser : MonoBehaviour
         if (col != null) col.isTrigger = true; // 몸체 충돌은 통과하는 Trigger 처리
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null) Destroy(rb);
+
+        if (GetComponent<EnemyGlitchTextureEffect>() == null)
+        {
+            gameObject.AddComponent<EnemyGlitchTextureEffect>();
+        }
     }
 
     private Color GetTextureColor(Texture tex)
