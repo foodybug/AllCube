@@ -99,6 +99,11 @@ public class GlitchDeadZoneEffect : MonoBehaviour
         }
         m_glitchTexture = s_sharedGlitchTexture;
 
+        if (m_glitchTexture != null)
+        {
+            m_pixels = m_glitchTexture.GetPixels32();
+        }
+
         if (m_material != null)
         {
             m_material.mainTexture = m_glitchTexture;
@@ -144,7 +149,7 @@ public class GlitchDeadZoneEffect : MonoBehaviour
 
     private void Update()
     {
-        if (m_material == null || m_glitchTexture == null) return;
+        if (m_material == null || m_glitchTexture == null || m_pixels == null) return;
 
         m_timer += Time.deltaTime;
         if (m_timer >= m_nextGlitchInterval)
