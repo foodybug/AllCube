@@ -15,6 +15,7 @@ public struct DifficultyTier
     public int minBlinkHeight;            // Blink 장애물이 등장하기 시작하는 최소 높이
     public int homingObstacleInterval;    // 느린 추적 장애물 생성 주기 (0 이면 미생성)
     public int minHomingHeight;           // 추적 장애물 등장 최소 높이
+    public float homingSpeed;             // 추적 장애물 이동 속도 (초반 1.8f -> 후반 5.5f)
     public int coinInterval;
     public int coinSequence;
     public float minFlyingSpeed;
@@ -75,9 +76,10 @@ public class StageConfig
                 minBlinkH = minHeight;
             }
 
-            // 느린 추적 장애물 (CubeHomingObstacle): 레벨 전체적으로 3배 배치 증량 (간격 8 -> 2, 최소 높이 4m)
-            int homingInterval = Mathf.Max(2, Mathf.RoundToInt(Mathf.Lerp(8f, 2f, progress)));
+            // 추적 장애물 (CubeHomingObstacle): 스폰 밀도 2배 추가 증량 (간격 4 -> 1, 최소 높이 4m) 및 후반 레벨 이동 속도 상승 (1.8f -> 5.5f)
+            int homingInterval = Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(4f, 1f, progress)));
             int minHomingH = 4;
+            float homingSpeed = Mathf.Lerp(1.8f, 5.5f, progress);
 
             // 코인 생성 간격 및 연속 스폰 이벤트
             int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));
@@ -99,6 +101,7 @@ public class StageConfig
                 minBlinkHeight = minBlinkH,
                 homingObstacleInterval = homingInterval,
                 minHomingHeight = minHomingH,
+                homingSpeed = homingSpeed,
                 coinInterval = coinInterval,
                 coinSequence = coinSequence,
                 minFlyingSpeed = minSpeed,

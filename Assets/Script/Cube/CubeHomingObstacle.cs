@@ -9,6 +9,14 @@ public class CubeHomingObstacle : MonoBehaviour
     [SerializeField]
     private float m_chaseSpeed = 1.8f; // 느리고 은밀하게 추적하는 속도
 
+    public void SetChaseSpeed(float speed)
+    {
+        if (speed > 0f)
+        {
+            m_chaseSpeed = speed;
+        }
+    }
+
     [SerializeField]
     private float m_maxDetectDistance = 35.0f; // 추적 감지 최대 거리
 

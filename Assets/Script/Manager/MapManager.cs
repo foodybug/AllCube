@@ -430,7 +430,7 @@ public class MapManager : MonoBehaviour
         return m_sharedMaterials[0];
     }
 
-    private GameObject _CreateCube(int x, int y, eMapProp prop, float scrollWidth, bool isBoundaryWall = false, bool isFlying = false, float customWorldX = 0f)
+    private GameObject _CreateCube(int x, int y, eMapProp prop, float scrollWidth, bool isBoundaryWall = false, bool isFlying = false, float customWorldX = 0f, float customHomingSpeed = 0f)
     {
         Vector3 vPos = Vector3.zero;
         GameObject go = GameObject.Instantiate(goCubeSrc) as GameObject;
@@ -504,7 +504,11 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_Homing:
-                go.AddComponent<CubeHomingObstacle>();
+                CubeHomingObstacle homingComp = go.AddComponent<CubeHomingObstacle>();
+                if (customHomingSpeed > 0f)
+                {
+                    homingComp.SetChaseSpeed(customHomingSpeed);
+                }
                 EnemyGlitchTextureEffect.AttachTo(go);
                 break;
         }
@@ -880,13 +884,14 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_JumpZero, rowScrollWidth, false));
         }
 
-        // 4. 느린 속도로 플레이어를 은밀히 추적해오는 Homing 장애물 생성 (3배 증량 배치)
+        // 4. 느린 속도로 플레이어를 은밀히 추적해오는 Homing 장애물 생성 (스폰 밀도 2배 추가 증량 및 후반 레벨 이동 속도 상승)
         int homingInterval = tier.homingObstacleInterval;
         int minHomingY = tier.minHomingHeight;
+        float homingSpeed = tier.homingSpeed > 0f ? tier.homingSpeed : Mathf.Lerp(1.8f, 5.5f, (float)y / 500f);
         if (homingInterval > 0 && y >= minHomingY && y % homingInterval == 0)
         {
             int randomX = Random.Range(minX + 2, maxX + 1);
-            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Homing, rowScrollWidth, false));
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Homing, rowScrollWidth, false, false, 0f, homingSpeed));
         }
 
         // 설정된 주기에 따라 화면 외곽에서 가로지르는 비행형 JumpZero 장애물 생성 (관통함)
