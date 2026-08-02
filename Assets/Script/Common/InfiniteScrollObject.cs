@@ -36,6 +36,8 @@ public class InfiniteScrollObject : MonoBehaviour
     public void UpdateScroll(float playerX)
     {
         if (m_scrollWidth <= 0f) return;
+        // Homing 추적 블록이나 MoveX 이동 블록 등 X축 가로 이동이 살아있는 블록은 스크롤 X고정 연산 제외
+        if (GetComponent<CubeHomingObstacle>() != null || GetComponent<CubeMoveX>() != null) return;
 
         // 플레이어의 절대 전역 X 위치를 스크롤 너비 기준으로 사이클 연산
         float cycle = Mathf.Round(playerX / m_scrollWidth);

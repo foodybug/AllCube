@@ -7,7 +7,7 @@ public class CubeHomingObstacle : MonoBehaviour
 {
     [Header("Homing Chase Settings")]
     [SerializeField]
-    private float m_chaseSpeed = 1.8f; // 느리고 은밀하게 추적하는 속도
+    private float m_chaseSpeed = 0.5f; // 초반 최소 느린 추적 속도 (0.5f)
 
     public void SetChaseSpeed(float speed)
     {
@@ -109,10 +109,12 @@ public class CubeHomingObstacle : MonoBehaviour
             return;
         }
 
-        // 감지 범위 내에 플레이어가 있을 경우 느린 속도로 플레이어를 향해 이동
+        // 감지 범위 내에 플레이어가 있을 경우 X축 및 Y축 독립 추적 (점프 시 X추적 마비 현상 완전 방지)
         if (distance <= m_maxDetectDistance && distance > 0.05f)
         {
-            transform.position = Vector3.MoveTowards(currentPos, targetPos, m_chaseSpeed * Time.deltaTime);
+            float newX = Mathf.MoveTowards(currentPos.x, targetPos.x, m_chaseSpeed * Time.deltaTime);
+            float newY = Mathf.MoveTowards(currentPos.y, targetPos.y, (m_chaseSpeed * 0.75f) * Time.deltaTime);
+            transform.position = new Vector3(newX, newY, currentPos.z);
 
             // MaterialPropertyBlock을 사용한 GPU Instancing 유지 펄스 연출
             if (m_renderer != null)

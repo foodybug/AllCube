@@ -76,10 +76,10 @@ public class StageConfig
                 minBlinkH = minHeight;
             }
 
-            // 추적 장애물 (CubeHomingObstacle): 스폰 밀도 2배 추가 증량 (간격 4 -> 1, 최소 높이 4m) 및 후반 레벨 이동 속도 상승 (1.8f -> 5.5f)
-            int homingInterval = Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(4f, 1f, progress)));
-            int minHomingH = 4;
-            float homingSpeed = Mathf.Lerp(1.8f, 5.5f, progress);
+            // 추적 장애물 (CubeHomingObstacle): 최소 이동 속도 0.5f에서 50개 티어 동안 단계적으로 점진 상승 (0.5f -> 5.0f)
+            int minHomingH = 10;
+            int homingInterval = Mathf.Max(4, Mathf.RoundToInt(Mathf.Lerp(18f, 4f, progress)));
+            float homingSpeed = Mathf.Lerp(0.5f, 5.0f, progress);
 
             // 코인 생성 간격 및 연속 스폰 이벤트
             int coinInterval = Mathf.Min(3, Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, 3f, progress))));

@@ -93,7 +93,7 @@ public class MapManager : MonoBehaviour
     }
 
     [Header("Infinite Scroll Settings")]
-    [SerializeField] private bool m_enableInfiniteScroll = true;
+    [SerializeField] private bool m_enableInfiniteScroll = false;
     [SerializeField] private float m_scrollWidth = 60.0f;
 
     public int CoinCount { get { return m_listCoin.Count; } }
@@ -448,10 +448,15 @@ public class MapManager : MonoBehaviour
 
         switch (prop)
         {
-            case eMapProp.eMapProp_None: break;
-            case eMapProp.eMapProp_Coin: break;
+            case eMapProp.eMapProp_None:
+                go.name = $"Cube_None_X{x}_Y{y}";
+                break;
+            case eMapProp.eMapProp_Coin:
+                go.name = $"Coin_X{x}_Y{y}";
+                break;
 
             case eMapProp.eMapProp_Normal:
+                go.name = $"CubeNormal_X{x}_Y{y}";
                 Renderer rendNormal = go.GetComponent<Renderer>();
                 if (rendNormal != null)
                 {
@@ -460,28 +465,34 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_Break:
+                go.name = $"CubeBreak_X{x}_Y{y}";
                 go.AddComponent<CubeBreak>();
                 break;
 
             case eMapProp.eMapProp_MoveX:
+                go.name = $"CubeMoveX_X{x}_Y{y}";
                 go.AddComponent<CubeMoveX>();
                 break;
 
             case eMapProp.eMapProp_MoveY:
+                go.name = $"CubeMoveY_X{x}_Y{y}";
                 go.AddComponent<CubeMoveY>();
                 break;
 
             case eMapProp.eMapProp_JumpZero:
                 if (isBoundaryWall)
                 {
+                    go.name = $"CubeDeadlyWall_X{x}_Y{y}";
                     go.AddComponent<CubeDeadly>();
                 }
                 else if (isFlying)
                 {
+                    go.name = $"CubeFlyingJumpZero_X{x}_Y{y}";
                     go.AddComponent<CubeFlyingJumpZero>();
                 }
                 else
                 {
+                    go.name = $"CubeJumpZero_X{x}_Y{y}";
                     CubeJumpZero comp = go.AddComponent<CubeJumpZero>();
                     comp.isBoundaryWall = false;
                 }
@@ -489,21 +500,25 @@ public class MapManager : MonoBehaviour
                 break;
 
             case eMapProp.eMapProp_Blink:
+                go.name = $"CubeBlink_X{x}_Y{y}";
                 go.AddComponent<CubeBlink>();
                 EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Laser:
+                go.name = $"CubeLaser_X{x}_Y{y}";
                 go.AddComponent<CubeLaser>();
                 EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Stationary:
+                go.name = $"CubeStationaryObstacle_X{x}_Y{y}";
                 go.AddComponent<CubeStationaryObstacle>();
                 EnemyGlitchTextureEffect.AttachTo(go);
                 break;
 
             case eMapProp.eMapProp_Homing:
+                go.name = $"CubeHomingObstacle_X{x}_Y{y}";
                 CubeHomingObstacle homingComp = go.AddComponent<CubeHomingObstacle>();
                 if (customHomingSpeed > 0f)
                 {
@@ -513,7 +528,8 @@ public class MapManager : MonoBehaviour
                 break;
         }
 
-        if (m_enableInfiniteScroll && !isFlying)
+        // Homing 추적 블록 및 MoveX 이동 블록은 X축 위치가 인피니트 스크롤에 의해 고정되지 않도록 제외
+        if (m_enableInfiniteScroll && !isFlying && prop != eMapProp.eMapProp_Homing && prop != eMapProp.eMapProp_MoveX)
         {
             InfiniteScrollObject scroll = go.AddComponent<InfiniteScrollObject>();
             Transform playerT = CameraManager.Instance != null ? CameraManager.Instance.Target : null;

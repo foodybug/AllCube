@@ -43,10 +43,10 @@ public class PlayerJumpEffect : MonoBehaviour
     {
         Material sharedMat = GetSharedJumpMaterial();
 
-        // Combo마다 particle 개수 +3개씩 증가 & 각 particle마다 아래쪽 속도 가속 및 고유 Color Over Time 변환 적용
+        // Combo마다 particle 개수 +1개씩 증가 & 아래쪽 퍼지는 속도 50% 축소 적용
         int baseParticleCount = 8;
-        int totalParticleCount = baseParticleCount + (combo * 3);
-        float speedScale = 1.0f + (combo * 0.25f); // 콤보 당 파티클 속도 25% 가속
+        int totalParticleCount = baseParticleCount + (combo * 1);
+        float speedScale = 1.0f + (combo * 0.125f);
 
         for (int i = 0; i < totalParticleCount; i++)
         {
@@ -70,10 +70,10 @@ public class PlayerJumpEffect : MonoBehaviour
                 pRend.sharedMaterial = sharedMat;
             }
 
-            // 하단 180도 부채꼴 각도(200도 ~ 340도)로 아래쪽을 향해 힘차게 분사
+            // 하단 부채꼴 각도로 아래쪽 퍼지는 속도를 기존의 반(50%)으로 감소시켜 분사
             float angle = Random.Range(200f, 340f) * Mathf.Deg2Rad;
-            float speedY = -Mathf.Abs(Mathf.Sin(angle)) * Random.Range(3.5f, 7.5f) - 2.0f;
-            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(2.5f, 5.5f), speedY, Random.Range(-1f, 1f)) * speedScale;
+            float speedY = -Mathf.Abs(Mathf.Sin(angle)) * Random.Range(1.75f, 3.75f) - 1.0f;
+            Vector3 vel = new Vector3(Mathf.Cos(angle) * Random.Range(1.25f, 2.75f), speedY, Random.Range(-0.5f, 0.5f)) * speedScale;
 
             JumpParticleMover mover = pCube.AddComponent<JumpParticleMover>();
             mover.velocity = vel;
