@@ -113,15 +113,13 @@ public class Title : MonoBehaviour
             {
                 if (ui.texLogo != null && ui.texLogo.gameObject != null) ui.texLogo.gameObject.SetActive(true);
                 if (ui.textTouchScreen != null && ui.textTouchScreen.gameObject != null) ui.textTouchScreen.gameObject.SetActive(true);
-                if (ui.goBtnSound != null) ui.goBtnSound.SetActive(true);
+                if (ui.btnOption != null && ui.btnOption.gameObject != null) ui.btnOption.gameObject.SetActive(true);
 
-                if (ui.btnSound != null)
+                if (ui.btnOption != null)
                 {
-                    ui.btnSound.onClick.RemoveAllListeners();
-                    ui.btnSound.onClick.AddListener(OnBtnSoundClicked);
+                    ui.btnOption.onClick.RemoveAllListeners();
+                    ui.btnOption.onClick.AddListener(OnBtnOptionClicked);
                 }
-
-                RefreshSoundButtonIcon();
             }
 
             Debug.Log("[Title Debug] Step 4: Checking LevelSelect state...");
@@ -134,7 +132,7 @@ public class Title : MonoBehaviour
                 {
                     if (ui.textTouchScreen != null && ui.textTouchScreen.gameObject != null) ui.textTouchScreen.gameObject.SetActive(false);
                     if (ui.texLogo != null && ui.texLogo.gameObject != null) ui.texLogo.gameObject.SetActive(false);
-                    if (ui.goBtnSound != null) ui.goBtnSound.SetActive(true);
+                    if (ui.btnOption != null && ui.btnOption.gameObject != null) ui.btnOption.gameObject.SetActive(true);
                 }
 
                 MainManager.Instance.GoLevelSelectScene();
@@ -247,13 +245,18 @@ public class Title : MonoBehaviour
                 return;
             }
 
+            if ((TitleOptionPopup.Instance != null && TitleOptionPopup.Instance.IsShowing()) || TitleOptionPopup.IsPopupJustClosed())
+            {
+                return;
+            }
+
             if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began))
             {
-                if (ui != null && ui.goBtnSound != null)
+                if (ui != null && ui.btnOption != null)
                 {
-                    RectTransform soundRect = ui.goBtnSound.transform as RectTransform;
-                    if (soundRect != null && RectTransformUtility.RectangleContainsScreenPoint(
-                        soundRect, Input.mousePosition, null))
+                    RectTransform optionRect = ui.btnOption.transform as RectTransform;
+                    if (optionRect != null && RectTransformUtility.RectangleContainsScreenPoint(
+                        optionRect, Input.mousePosition, null))
                     {
                         return; 
                     }
@@ -269,43 +272,24 @@ public class Title : MonoBehaviour
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[Title Debug] Exception during Title touch transition: {ex.Message}\n{ex.StackTrace}");
+                    Debug.LogError("[Title Debug] Error starting level: " + ex.Message);
                 }
             }
         }
     }
 
-    private void OnBtnSoundClicked()
+    private void OnBtnOptionClicked()
     {
-        if (MainManager.Instance == null) return;
-
-        if (0 == MainManager.Instance.nSoundEnable)
+        if (AudioManager.Instance != null) AudioManager.Instance.Play("Sound/ui_button_down");
+        if (TitleOptionPopup.Instance != null)
         {
-            MainManager.Instance.nSoundEnable = 1;
-            AudioManager.Instance.PlayBgm("Sound/bgm");
+            TitleOptionPopup.Instance.Show();
         }
-        else
-        {
-            MainManager.Instance.nSoundEnable = 0;
-            AudioManager.Instance.StopBgm();
-        }
-
-        AudioManager.Instance.Play("Sound/ui_button_down");
-        RefreshSoundButtonIcon();
     }
 
     private void RefreshSoundButtonIcon()
     {
-        if (ui == null || ui.texSound == null || MainManager.Instance == null) return;
-
-        if (0 == MainManager.Instance.nSoundEnable)
-        {
-            ui.texSound.texture = Resources.Load("UI/sound_off") as Texture;
-        }
-        else
-        {
-            ui.texSound.texture = Resources.Load("UI/sound_on") as Texture;
-        }
+        // 옵션 팝업 오픈 방식으로 변경됨 (구버전 단일 토글 아이콘 미사용)
     }
 
     private void CreateBackground()

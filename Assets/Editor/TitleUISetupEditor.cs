@@ -57,12 +57,11 @@ public class TitleUISetupEditor : EditorWindow
         uiTitle.texLogo = FindComponentInScene<UnityEngine.UI.RawImage>("texLogo");
         uiTitle.textTouchScreen = FindComponentInScene<UnityEngine.UI.Text>("textTouchScreen");
         
-        var soundBtn = FindComponentInScene<UnityEngine.UI.Button>("goBtnSound");
-        if (soundBtn != null)
+        var optionBtn = FindComponentInScene<UnityEngine.UI.Button>("btnOption");
+        if (optionBtn == null) optionBtn = FindComponentInScene<UnityEngine.UI.Button>("btnSound");
+        if (optionBtn != null)
         {
-            uiTitle.goBtnSound = soundBtn.gameObject;
-            uiTitle.btnSound = soundBtn;
-            uiTitle.texSound = soundBtn.GetComponent<UnityEngine.UI.RawImage>();
+            uiTitle.btnOption = optionBtn;
         }
 
         // 6. Title 컨트롤러에 UI_Title 뷰 바인딩
@@ -92,7 +91,7 @@ public class TitleUISetupEditor : EditorWindow
         Debug.Log("[TitleUISetup]  - UI_Title: Component references permanently assigned");
         Debug.Log("[TitleUISetup]    * texLogo: " + (uiTitle.texLogo != null ? "Bound & Ready" : "NOT FOUND"));
         Debug.Log("[TitleUISetup]    * textTouchScreen: " + (uiTitle.textTouchScreen != null ? "Bound & Ready" : "NOT FOUND"));
-        Debug.Log("[TitleUISetup]    * goBtnSound: " + (uiTitle.goBtnSound != null ? "Bound & Ready" : "NOT FOUND"));
+        Debug.Log("[TitleUISetup]    * btnOption: " + (uiTitle.btnOption != null ? "Bound & Ready" : "NOT FOUND"));
         Debug.Log("[TitleUISetup] ===================================================");
     }
 
@@ -172,10 +171,10 @@ public class TitleUISetupEditor : EditorWindow
             Debug.Log("[TitleUISetup] Created 'textTouchScreen' Text with Outline styling.");
         }
 
-        // 5. goBtnSound (사운드 제어 버튼) 자동 생성
-        if (FindComponentInScene<UnityEngine.UI.Button>("goBtnSound") == null)
+        // 5. btnSound (사운드 제어 버튼) 자동 생성
+        if (FindComponentInScene<UnityEngine.UI.Button>("btnSound") == null)
         {
-            GameObject btnGo = new GameObject("goBtnSound");
+            GameObject btnGo = new GameObject("btnSound");
             btnGo.transform.SetParent(canvasTrans, false);
             var btnComp = btnGo.AddComponent<UnityEngine.UI.Button>();
             var rawImg = btnGo.AddComponent<UnityEngine.UI.RawImage>();
@@ -187,12 +186,14 @@ public class TitleUISetupEditor : EditorWindow
             rawImg.rectTransform.anchoredPosition = new Vector2(-40, -40); // 우상단 여백 40
             rawImg.rectTransform.sizeDelta = new Vector2(80, 80);
             
-            // UI/sound_on 로드하여 기본 바인딩 (하얀 블록 방지)
-            rawImg.texture = Resources.Load("UI/sound_on") as Texture;
+            // UI/btn_option 로드하여 기본 바인딩 (하얀 블록 방지)
+            Texture optTex = Resources.Load("UI/btn_option") as Texture;
+            if (optTex == null) optTex = Resources.Load("UI/sound_on") as Texture;
+            rawImg.texture = optTex;
             rawImg.color = Color.white;
 
-            Undo.RegisterCreatedObjectUndo(btnGo, "Create goBtnSound");
-            Debug.Log("[TitleUISetup] Created 'goBtnSound' Button at top-right anchor.");
+            Undo.RegisterCreatedObjectUndo(btnGo, "Create btnSound");
+            Debug.Log("[TitleUISetup] Created 'btnSound' Button at top-right anchor.");
         }
     }
 

@@ -58,7 +58,7 @@ public class MainManager : MonoBehaviour
     public static int lastJumpCount = 0;
     public static string lastDeathCause = "";
     public static int lastServerRank = -1;
-    public static double lastServerPercentage = -1.0;
+    public static float lastServerPercentage = -1.0f;
     public static bool StartInLevelSelect = false;
 
     public bool IsTransitioning

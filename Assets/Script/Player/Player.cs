@@ -51,6 +51,9 @@ public class Player : MonoBehaviour
         m_rb = GetComponent<Rigidbody>();
         m_renderer = GetComponent<Renderer>();
 
+        if (texPlayer_On == null) texPlayer_On = Resources.Load("Player/texPlayerOn") as Texture;
+        if (texPlayer_Off == null) texPlayer_Off = Resources.Load("Player/texPlayerOff") as Texture;
+
         // TrailRenderer 및 PlayerCubeGhostTrail 이펙트 완전 비활성화 및 제거
         TrailRenderer tr = GetComponent<TrailRenderer>();
         if (tr != null) Destroy(tr);

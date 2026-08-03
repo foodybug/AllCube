@@ -11,16 +11,53 @@ public class AudioManager : MonoBehaviour
 	private GameObject m_goAudio = null;
 	private GameObject m_goBgm = null;
 
+	private float m_bgmVolume = 1.0f;
+	private float m_sfxVolume = 1.0f;
+
+	public float BgmVolume
+	{
+		get { return m_bgmVolume; }
+		set
+		{
+			m_bgmVolume = Mathf.Clamp01(value);
+			PlayerPrefs.SetFloat("BgmVolume", m_bgmVolume);
+			PlayerPrefs.Save();
+			if (m_goBgm != null)
+			{
+				AudioSource src = m_goBgm.GetComponent<AudioSource>();
+				if (src != null) src.volume = m_bgmVolume;
+			}
+		}
+	}
+
+	public float SfxVolume
+	{
+		get { return m_sfxVolume; }
+		set
+		{
+			m_sfxVolume = Mathf.Clamp01(value);
+			PlayerPrefs.SetFloat("SfxVolume", m_sfxVolume);
+			PlayerPrefs.Save();
+		}
+	}
+
 	void Awake()
 	{
 		m_instance = this;
+		m_bgmVolume = PlayerPrefs.GetFloat("BgmVolume", 1.0f);
+		m_sfxVolume = PlayerPrefs.GetFloat("SfxVolume", 1.0f);
 	}
 	
 	void Start()
 	{
 		GameObject goAudioSource = Resources.Load( "Sound/AudioSource") as GameObject;
 		m_goBgm = GameObject.Instantiate( goAudioSource, Vector3.zero, Quaternion.identity) as GameObject;
-		m_goBgm.GetComponent<AudioSource>().loop = true;
+		AudioSource bgmSource = m_goBgm.GetComponent<AudioSource>();
+		if (bgmSource != null)
+		{
+			bgmSource.loop = true;
+			bgmSource.volume = m_bgmVolume;
+		}
 	}
 	
 	void Update()
@@ -48,8 +85,13 @@ public class AudioManager : MonoBehaviour
 			return;
 		}
 
-		m_goBgm.GetComponent<AudioSource>().clip = clip;
-		m_goBgm.GetComponent<AudioSource>().Play();
+		AudioSource src = m_goBgm.GetComponent<AudioSource>();
+		if (src != null)
+		{
+			src.clip = clip;
+			src.volume = m_bgmVolume;
+			src.Play();
+		}
 	}
 
 	public void StopBgm()
@@ -78,7 +120,7 @@ public class AudioManager : MonoBehaviour
 		if (audioSource != null)
 		{
 			audioSource.clip = clip;
-			audioSource.volume = fVolume;
+			audioSource.volume = fVolume * m_sfxVolume;
 			audioSource.pitch = fPitch;
 			audioSource.Play();
 		}

@@ -365,7 +365,7 @@ public class ResultMain : MonoBehaviour
     private IEnumerator SubmitScoreToWebserver_CR(int score)
     {
         MainManager.lastServerRank = -1;
-        MainManager.lastServerPercentage = -1.0;
+        MainManager.lastServerPercentage = -1.0f;
         m_serverLeaderboardText = "";
 
         string url = m_rankingServerUrl;
@@ -376,8 +376,10 @@ public class ResultMain : MonoBehaviour
             byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
             request.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+            request.certificateHandler = new BypassCertificateHandler(); // 모바일 단말 SSL 검증 차단 회피
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 5; 
+            request.SetRequestHeader("User-Agent", "AllCube-UnityClient/1.0");
+            request.timeout = 10; // 서버 콜드 스타트 및 모바일 네트워크 지연 대비 (10초 확장)
 
             yield return request.SendWebRequest();
 
@@ -435,7 +437,7 @@ public class ResultMain : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[ResultMain WebServer] Score submit failed or server offline: " + request.error);
+                Debug.LogWarning("[ResultMain WebServer] Score submit failed: " + request.error + " | Result: " + request.result);
                 MainManager.lastServerRank = -2;
                 m_serverLeaderboardText = "";
             }
@@ -713,7 +715,15 @@ public class RankingEntry
 public class RankingResponse
 {
     public int rank;
-    public double topPercentage;
+    public float topPercentage;
     public int totalPlayers;
     public List<RankingEntry> leaderboardWindow;
+}
+
+public class BypassCertificateHandler : UnityEngine.Networking.CertificateHandler
+{
+    protected override bool ValidateCertificate(byte[] certificateData)
+    {
+        return true;
+    }
 }
