@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+
+    <!-- Subtle Arcade Motion Trail -->
+    <linearGradient id="trailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
+
+  <!-- Minimalist Arcade Speed Lines / Motion Effect -->
+  <g opacity="0.4">
+    <line x1="80" y1="120" x2="160" y2="40" stroke="#38BDF8" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round"/>
+    <line x1="360" y1="470" x2="440" y2="390" stroke="#38BDF8" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round"/>
+    <circle cx="90" cy="420" r="4" fill="#6BE89C" opacity="0.5"/>
+    <circle cx="430" cy="90" r="5" fill="#FDE86B" opacity="0.5"/>
+  </g>
+
+  <!-- Subtle Arcade Speed Trail Silhouette -->
+  <g transform="translate(-16, -16)" opacity="0.25">
+    <path d="M 256,136 L 376,256 L 256,376 L 136,256 Z" fill="none" stroke="#38BDF8" stroke-width="6"/>
+  </g>
+
+  <!-- MAIN LOGO CUBE (Four Triangles with Crisp Gap Lines) -->
+  <g transform="translate(0, 0)">
+    <!-- Top Triangle (Cyan / Light Sky Blue) -->
+    <polygon points="256,140 372,252 256,252" fill="#5AD8FE"/>
+    <polygon points="256,140 256,252 140,252" fill="#7CE0FF"/>
+
+    <!-- Right Triangle (Mint Green) -->
+    <polygon points="372,256 256,372 256,256" fill="#6BE89C"/>
+
+    <!-- Bottom Triangle (Pastel Yellow) -->
+    <polygon points="256,372 140,256 256,256" fill="#FDE86B"/>
+
+    <!-- Left Triangle (White) -->
+    <polygon points="140,252 256,136 256,252" fill="#FFFFFF"/>
+
+    <!-- Simplified Precise Triangles with Grid Gaps -->
+    <!-- Re-rendering exact 4 triangles with gap mask for razor precision -->
+  </g>
+  
+  <g transform="translate(256, 256) scale(1.15)">
+    <!-- Top (Blue) -->
+    <polygon points="0,-100 100,0 0,0" fill="#5AD8FE" transform="translate(0, -5)"/>
+    <polygon points="0,-100 -100,0 0,0" fill="#6EE5FF" transform="translate(0, -5)"/>
+    
+    <!-- Right (Green) -->
+    <polygon points="100,0 0,100 0,0" fill="#6BE89C" transform="translate(5, 0)"/>
+    
+    <!-- Bottom (Yellow) -->
+    <polygon points="0,100 -100,0 0,0" fill="#FDE86B" transform="translate(0, 5)"/>
+    
+    <!-- Left (White) -->
+    <polygon points="-100,0 0,-100 0,0" fill="#FFFFFF" transform="translate(-5, 0)"/>
+  </g>
+</svg>

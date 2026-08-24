@@ -21,6 +21,9 @@ public class CubeFlyingJumpZero : MonoBehaviour
         {
             rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(6);
         }
+
+        // 적대 글리치 이펙트 기능 스크립트 부착
+        EnemyGlitchTextureEffect.AttachTo(gameObject);
     }
 
     public void InitFlying(float flySpeed, Transform playerTransform)
@@ -41,6 +44,11 @@ public class CubeFlyingJumpZero : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         HandlePlayerCollision(other.gameObject);
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        HandlePlayerCollision(collision.gameObject);
     }
 
     private void HandlePlayerCollision(GameObject otherGo)

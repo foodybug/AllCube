@@ -4,6 +4,7 @@ using System.Collections;
 public class CubeLaser : MonoBehaviour
 {
     private LineRenderer m_lineRenderer;
+    private GameObject m_lineObj;
     private Vector3 m_targetDirection;
     private float m_speed = 50f;
     private bool m_isMoving = false;
@@ -19,7 +20,7 @@ public class CubeLaser : MonoBehaviour
 
     private Color GetTextureColor(Texture tex)
     {
-        if (tex == null) return Color.red;
+        if (tex == null) return new Color(0.95f, 0.2f, 0.4f);
 
         string name = tex.name.ToLower();
         if (name.Contains("enemy_1")) return new Color(0.70f, 0.72f, 0.71f);
@@ -35,12 +36,12 @@ public class CubeLaser : MonoBehaviour
         if (name.Contains("5")) return new Color(0.45f, 0.65f, 0.80f);
         if (name.Contains("6")) return new Color(0.89f, 0.45f, 0.49f);
 
-        return Color.red;
+        return new Color(0.95f, 0.2f, 0.4f);
     }
 
     private Color GetLaserColor(Renderer rend)
     {
-        if (rend == null || rend.sharedMaterial == null) return Color.red;
+        if (rend == null || rend.sharedMaterial == null) return new Color(1.0f, 0.2f, 0.4f, 1.0f);
 
         Material mat = rend.sharedMaterial;
         Color tintColor = Color.white;
@@ -60,16 +61,19 @@ public class CubeLaser : MonoBehaviour
 
     void Start()
     {
-        // 1. 적대 장애물 재질 입히기 (8번 머티리얼)
+        // 1. 적대 장애물 전용 텍스처 머티리얼 적용 (5번 - Enemy 텍스처 지정)
         Renderer rend = GetComponent<Renderer>();
         if (rend != null && MapManager.Instance != null)
         {
-            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(8);
+            rend.sharedMaterial = MapManager.Instance.GetSharedMaterial(5);
         }
 
-        // 2. 360도 무작위 출현 각도(spawnAngle) 및 스폰 위치 계산
-        float spawnAngle = Random.Range(0f, 360f); // 0~360도 전체 방향 무작위 각도
-        float spawnDistance = Random.Range(22.0f, 32.0f); // 화면 외곽 조준 거리
+        // 레이저 블럭 시각적 식별 강화를 위해 1.2배 크기 적용
+        transform.localScale = Vector3.one * 1.2f;
+
+        // 2. 360도 무작위 출현 각도(spawnAngle) 및 화면 외곽 스폰 위치 계산 (카메라 시야 경계 14~16m)
+        float spawnAngle = Random.Range(0f, 360f);
+        float spawnDistance = Random.Range(14.0f, 16.0f);
 
         Player player = FindFirstObjectByType<Player>();
         Vector3 playerPos = Vector3.zero;
@@ -88,19 +92,23 @@ public class CubeLaser : MonoBehaviour
 
         transform.position = spawnPos;
 
-        // 플레이어 본체 또는 약간의 미세 무작위 각도 오프셋(-15° ~ +15°)을 가미하여 다양한 각도의 발사 궤적 결정
-        float aimOffsetAngle = Random.Range(-15f, 15f);
+        // 플레이어 본체 조준 오프셋 각도 (-3° ~ +3°로 축소하여 화면 및 플레이어 궤적에 확실히 노출)
+        float aimOffsetAngle = Random.Range(-3f, 3f);
         Vector3 baseTargetDir = (playerPos - spawnPos).normalized;
         if (baseTargetDir == Vector3.zero) baseTargetDir = Vector3.left;
 
         m_targetDirection = (Quaternion.Euler(0, 0, aimOffsetAngle) * baseTargetDir).normalized;
 
-        // 레이저 블럭 조준 방향 회전
-        float angleZ = Mathf.Atan2(m_targetDirection.y, m_targetDirection.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0f, 0f, angleZ);
+        // 다른 모든 큐브 장애물들과 동일하게 Z축 회전을 0으로 정직교 정렬 (월드 이동 궤적은 m_targetDirection 벡터로 수행)
+        transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
-        // 3. LineRenderer 컴포넌트 추가
-        m_lineRenderer = gameObject.AddComponent<LineRenderer>();
+        // 3. 큐브 메쉬 렌더러와 간섭하지 않도록 별도 자식 GameObject에 LineRenderer 생성
+        m_lineObj = new GameObject("LaserLineEffect");
+        m_lineObj.transform.SetParent(transform, false);
+        m_lineObj.transform.localPosition = Vector3.zero;
+        m_lineObj.transform.localRotation = Quaternion.identity;
+
+        m_lineRenderer = m_lineObj.AddComponent<LineRenderer>();
         
         Color laserColor = GetLaserColor(rend);
 
@@ -118,12 +126,12 @@ public class CubeLaser : MonoBehaviour
             m_lineRenderer.material.color = laserColor;
         }
 
-        // 4. 레이저 경고 궤적 끝단 설정 (발사 궤적 방향으로 화면 밖 100미터 길이)
+        // 4. 화면 양방향 끝까지 잘림 없이 길게 뻗어나가도록 양방향 300미터 길이 적용
         m_lineRenderer.positionCount = 2;
-        m_lineRenderer.SetPosition(0, spawnPos);
-        m_lineRenderer.SetPosition(1, spawnPos + m_targetDirection * 100f);
+        m_lineRenderer.SetPosition(0, spawnPos - m_targetDirection * 300f);
+        m_lineRenderer.SetPosition(1, spawnPos + m_targetDirection * 300f);
 
-        // 5. 레이저 페이드아웃 -> 대기 -> 돌진 코루틴 실행
+        // 5. 레이저 페이드아웃 -> 돌진 코루틴 실행
         StartCoroutine(LaserRoutine());
 
         // 생성 후 6초가 지나면 씬을 탈출한 것이므로 자동 소거
@@ -132,10 +140,10 @@ public class CubeLaser : MonoBehaviour
 
     private IEnumerator LaserRoutine()
     {
-        float duration = 1.0f;
+        float duration = 0.7f;
         float elapsed = 0.0f;
 
-        // 1초 동안 레이저 빔 두께 선형 축소
+        // 0.7초 동안 레이저 빔 두께 선형 축소 (조준 경고 연출)
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -149,15 +157,16 @@ public class CubeLaser : MonoBehaviour
             yield return null;
         }
 
-        // 얇아지다 완전히 사라지면 컴포넌트 정리
-        if (m_lineRenderer != null)
+        // 경고 이펙트 종료 시 자식 이펙트 오브젝트 제거 (메인 큐브 메쉬 영향 제로)
+        if (m_lineObj != null)
         {
-            m_lineRenderer.enabled = false;
-            Destroy(m_lineRenderer);
+            Destroy(m_lineObj);
+            m_lineObj = null;
+            m_lineRenderer = null;
         }
 
-        // 사라진 후 1초 대기
-        yield return new WaitForSeconds(1.0f);
+        // 경고선 축소 완료 후 지체 없이 바로 돌진 (0.05초)
+        yield return new WaitForSeconds(0.05f);
 
         // 이동 시작
         m_isMoving = true;
@@ -167,7 +176,7 @@ public class CubeLaser : MonoBehaviour
     {
         if (m_isMoving)
         {
-            // 정해진 타겟팅 방향으로 아주 빠른 속도로 질주
+            // 정해진 타겟팅 방향으로 빠른 속도로 질주
             transform.Translate(m_targetDirection * m_speed * Time.deltaTime, Space.World);
         }
     }

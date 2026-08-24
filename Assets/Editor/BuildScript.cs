@@ -36,25 +36,49 @@ public class BuildScript
         PerformAndroidBuild(BuildOptions.None, isAAB: false);
     }
 
+    public static bool IsBuildScriptRunning { get; private set; } = false;
+
     public static void PerformAndroidBuild(BuildOptions buildOptions, bool isAAB = false)
     {
-        Debug.Log($"[BuildScript] Starting Android Build (IsAAB: {isAAB}, Options: {buildOptions})...");
-
-        // 안드로이드 타겟 플랫폼 스위치 보장
-        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+        IsBuildScriptRunning = true;
+        try
         {
-            Debug.Log("[BuildScript] Switching active build target to Android...");
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
-        }
+            Debug.Log($"[BuildScript] Starting Android Build (IsAAB: {isAAB}, Options: {buildOptions})...");
 
-        // 안드로이드 패키지 명(Application Identifier) 및 버전 코드 자동 세팅
-        PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.foodybug.allcube");
-        PlayerSettings.bundleVersion = "1.0.0";
-        PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
-        // 안드로이드 호환성 API 레벨 설정 (구글 최신 정책: Min API 25 / Target API 35)
-        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
-        PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35; // API Level 35 (Android 15) 최신 구글 플레이 정책 대응
-        PlayerSettings.Android.bundleVersionCode = 3; // 구글 플레이 신규 업로드 버전 코드 (+1 증가)
+            // 안드로이드 타겟 플랫폼 스위치 보장
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+            {
+                Debug.Log("[BuildScript] Switching active build target to Android...");
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+            }
+
+            // 안드로이드 패키지 명(Application Identifier) 및 제품명(Product Name) 설정
+            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.foodybug.peakleas");
+            PlayerSettings.productName = "PeakLeas";
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            // 안드로이드 호환성 API 레벨 설정 (구글 최신 정책: Min API 25 / Target API 35)
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
+            PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35; // API Level 35 (Android 15) 최신 구글 플레이 정책 대응
+
+            // AAB 빌드 옵션인 경우 구글 플레이 업로드 번들 버전 코드(bundleVersionCode) 및 버전 명칭 자동 +1 증가
+            if (isAAB)
+            {
+                int oldCode = PlayerSettings.Android.bundleVersionCode;
+                int newCode = oldCode + 1;
+                PlayerSettings.Android.bundleVersionCode = newCode;
+
+                string[] vParts = PlayerSettings.bundleVersion.Split('.');
+                if (vParts.Length == 3 && int.TryParse(vParts[2], out int patchVer))
+                {
+                    PlayerSettings.bundleVersion = $"{vParts[0]}.{vParts[1]}.{patchVer + 1}";
+                }
+                else
+                {
+                    PlayerSettings.bundleVersion = $"1.0.{newCode}";
+                }
+
+                Debug.Log($"[BuildScript] AAB Build Detected -> Automatically incremented bundleVersionCode to {newCode} (Version: {PlayerSettings.bundleVersion})");
+            }
 
         // 스크립팅 백엔드 IL2CPP 전환 및 CPU 아키텍처 ARM64 빌드 (LLVM out of memory 방지 및 구글 최신 64비트 단말 표준)
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
@@ -76,13 +100,13 @@ public class BuildScript
             Debug.Log($"[BuildScript] Scene [{i}]: {scenePaths[i]}");
         }
 
-        // 빌드 타겟 폴더 생성 ( Builds/AllCube.apk )
+        // 빌드 타겟 폴더 생성 ( Builds/PeakLeas.apk )
         string buildDirectory = "Builds";
         if (!Directory.Exists(buildDirectory))
         {
             Directory.CreateDirectory(buildDirectory);
         }
-        string buildFileName = isAAB ? "AllCube_Release.aab" : "AllCube.apk";
+        string buildFileName = isAAB ? "PeakLeas_Release.aab" : "PeakLeas.apk";
         string buildPath = Path.Combine(buildDirectory, buildFileName);
         string fullPath = Path.GetFullPath(buildPath);
 
@@ -119,12 +143,47 @@ public class BuildScript
 
             Debug.Log($"[BuildScript] Android Build Completed successfully! Saved to: {fullPath} (Modified: {timeStr})");
             EditorUtility.RevealInFinder(buildPath);
-            EditorUtility.DisplayDialog("Android Build", $"안드로이드 APK 빌드가 성공적으로 완료되었습니다!\n\n저장 위치: {fullPath}\n완료 시각: {timeStr}", "확인");
+            EditorUtility.DisplayDialog("Android Build", $"안드로이드 APK/AAB 빌드가 성공적으로 완료되었습니다!\n\n저장 위치: {fullPath}\n버전 코드: {PlayerSettings.Android.bundleVersionCode}\n버전: {PlayerSettings.bundleVersion}\n완료 시각: {timeStr}", "확인");
         }
         else
         {
             Debug.LogError($"[BuildScript] Android Build Failed! Result: {report.summary.result}");
-            EditorUtility.DisplayDialog("Android Build Error", $"안드로이드 APK 빌드 중 오류가 발생했습니다.\n\n결과: {report.summary.result}\n\nUnity Editor의 Console 창에서 자세한 에러 로그를 확인하세요.", "확인");
+            EditorUtility.DisplayDialog("Android Build Error", $"안드로이드 빌드 중 오류가 발생했습니다.\n\n결과: {report.summary.result}\n\nUnity Editor의 Console 창에서 자세한 에러 로그를 확인하세요.", "확인");
+        }
+        }
+        finally
+        {
+            IsBuildScriptRunning = false;
+        }
+    }
+}
+
+public class AutoIncrementBundleVersionProcessor : UnityEditor.Build.IPreprocessBuildWithReport
+{
+    public int callbackOrder => 0;
+
+    public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
+    {
+        if (report.summary.platform == BuildTarget.Android && EditorUserBuildSettings.buildAppBundle)
+        {
+            if (!BuildScript.IsBuildScriptRunning)
+            {
+                int oldCode = PlayerSettings.Android.bundleVersionCode;
+                int newCode = oldCode + 1;
+                PlayerSettings.Android.bundleVersionCode = newCode;
+
+                string[] vParts = PlayerSettings.bundleVersion.Split('.');
+                if (vParts.Length == 3 && int.TryParse(vParts[2], out int patchVer))
+                {
+                    PlayerSettings.bundleVersion = $"{vParts[0]}.{vParts[1]}.{patchVer + 1}";
+                }
+                else
+                {
+                    PlayerSettings.bundleVersion = $"1.0.{newCode}";
+                }
+
+                Debug.Log($"[AutoIncrementBundleVersion] Standard Unity AAB build detected -> Auto-incremented bundleVersionCode to {newCode} (Version: {PlayerSettings.bundleVersion})");
+            }
         }
     }
 }

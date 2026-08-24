@@ -254,12 +254,14 @@ public class UIManager : MonoBehaviour
 
         string strLevel = "Level " + m_nLevelBuff.ToString();
         string strJewel = string.Format("Jewel {0:n0}", nCoin);
-        string strHeight = string.Format("Height {0}m (Best {1}m)", m_nMaxHeightThisRun, allTimeBest);
+        string strHeight = string.Format("Height\n<size=32>{0}m</size>", m_nMaxHeightThisRun);
+        string strJumps = string.Format("Jumps\n<size=32>{0:n0}</size>", nJumps);
 
         if (ui.textJumps != null)
         {
+            ui.textJumps.supportRichText = true;
             if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight;
-            ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
+            ui.textJumps.text = strJumps;
             if (false == ui.textJumps.gameObject.activeInHierarchy)
             {
                 ui.textJumps.gameObject.SetActive(true);
@@ -267,7 +269,6 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            string strJumps = string.Format("Jumps {0:n0}", nJumps);
             if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight + "\n" + strJumps;
         }
     }

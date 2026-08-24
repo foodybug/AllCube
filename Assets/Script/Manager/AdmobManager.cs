@@ -35,6 +35,7 @@ public class AdmobManager : MonoBehaviour
 
     void Start()
     {
+        if (m_instance != this) return;
         InitializeSDK();
     }
 
@@ -58,7 +59,21 @@ public class AdmobManager : MonoBehaviour
 
     public void InitBanner()
     {
-        if (bannerView != null) return;
+        if (m_instance != this) return;
+
+        // 기존 배너가 이미 존재할 경우 완전 파괴하여 중복 겹침 노출 차단
+        if (bannerView != null)
+        {
+            try
+            {
+                bannerView.Destroy();
+                bannerView = null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[AdmobManager] Destroy old banner Exception: " + ex.Message);
+            }
+        }
 
         try
         {
@@ -71,7 +86,7 @@ public class AdmobManager : MonoBehaviour
             bannerView.LoadAd(request);
 
             m_isShowing = true;
-            Debug.Log("[AdmobManager] Banner View created and load requested successfully.");
+            Debug.Log("[AdmobManager] Single Banner View created and load requested successfully.");
         }
         catch (Exception ex)
         {

@@ -148,12 +148,8 @@ public class TitleUISetupEditor : EditorWindow
             textGo.transform.SetParent(canvasTrans, false);
             var textComp = textGo.AddComponent<UnityEngine.UI.Text>();
             
-            textComp.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (textComp.font == null)
-            {
-                Font[] fonts = Resources.FindObjectsOfTypeAll<Font>();
-                if (fonts != null && fonts.Length > 0) textComp.font = fonts[0];
-            }
+            textComp.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Resources/Font/PretendardVariable.ttf");
+            if (textComp.font == null) textComp.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             textComp.text = "TOUCH TO START";
             textComp.fontSize = 28;

@@ -162,19 +162,15 @@ public class ResultUISetupEditor : EditorWindow
             textGo.transform.SetParent(canvasTrans, false);
             var textComp = textGo.AddComponent<UnityEngine.UI.Text>();
             
-            textComp.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (textComp.font == null)
-            {
-                Font[] fonts = Resources.FindObjectsOfTypeAll<Font>();
-                if (fonts != null && fonts.Length > 0) textComp.font = fonts[0];
-            }
+            textComp.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Resources/Font/PretendardVariable.ttf");
+            if (textComp.font == null) textComp.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             textComp.fontSize = 28;
             textComp.alignment = TextAnchor.MiddleCenter;
             textComp.color = Color.white;
             
-            // 판넬 윈도우 중앙에 깔끔하게 맞춤 배치
-            textComp.rectTransform.anchoredPosition = new Vector2(0, -10);
+            // 판넬 윈도우 상단 쪽에 맞춤 배치하여 Time 표기가 위쪽에 시원하게 노출되도록 함
+            textComp.rectTransform.anchoredPosition = new Vector2(0, 15);
             textComp.rectTransform.sizeDelta = new Vector2(340, 200);
             
             // 가독성 아웃라인 및 그림자 컴포넌트 추가

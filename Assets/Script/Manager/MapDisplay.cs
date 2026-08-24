@@ -211,12 +211,19 @@ public class MapDisplay : MonoBehaviour
             if (rendFast != null && m_mapManager != null) rendFast.sharedMaterial = m_mapManager.GetSharedMaterial(9);
         }
 
-        // 6. 타겟팅 레이저 장애물 (CubeLaser)
-        if (y >= 400 && y % 18 == 0)
+        // 6. 타겟팅 레이저 장애물 (CubeLaser - 90m부터 등장)
+        if (y >= 90 && y % 15 == 0)
         {
             bool spawnLeft = UnityEngine.Random.value > 0.5f;
             float startWorldX = spawnLeft ? -10.0f : 10.0f;
             CreateCubeIdentical(0, y, MapManager.eMapProp.eMapProp_Laser, false, true, startWorldX);
+        }
+
+        // 7. 광란의 사방팔방 무작위 이동 장애물 (CubeCrazy - 150m부터 등장, 빈도 축소: 60m 주기)
+        if (y >= 150 && y % 60 == 0)
+        {
+            int randomX = UnityEngine.Random.Range(minX + 2, maxX + 1);
+            CreateCubeIdentical(randomX, y, MapManager.eMapProp.eMapProp_Crazy, false, false);
         }
 
         // 7. 보석(Coin) 배치 (MapManager의 4개 스폰 방식 100% 동일 구현)
@@ -308,6 +315,10 @@ public class MapDisplay : MonoBehaviour
                 CubeHomingObstacle hComp = go.GetComponent<CubeHomingObstacle>();
                 if (hComp == null) hComp = go.AddComponent<CubeHomingObstacle>();
                 hComp.enabled = false;
+                break;
+
+            case MapManager.eMapProp.eMapProp_Crazy:
+                if (go.GetComponent<CubeCrazy>() == null) go.AddComponent<CubeCrazy>();
                 break;
         }
 

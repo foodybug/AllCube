@@ -245,23 +245,21 @@ public class Title : MonoBehaviour
                 return;
             }
 
-            if ((TitleOptionPopup.Instance != null && TitleOptionPopup.Instance.IsShowing()) || TitleOptionPopup.IsPopupJustClosed())
+            if ((ui != null && ui.optionPopup != null && ui.optionPopup.IsShowing()) ||
+                TitleOptionPopup.IsAnyOptionPopupShowing() || TitleOptionPopup.IsPopupJustClosed())
             {
                 return;
             }
 
+            // EventSystem이 UI 버튼/팝업 터치를 처리 중인 경우 레벨 기동 클릭으로 오작동하지 않도록 구별
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+                if (Input.touchCount > 0 && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId)) return;
+            }
+
             if (Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began))
             {
-                if (ui != null && ui.btnOption != null)
-                {
-                    RectTransform optionRect = ui.btnOption.transform as RectTransform;
-                    if (optionRect != null && RectTransformUtility.RectangleContainsScreenPoint(
-                        optionRect, Input.mousePosition, null))
-                    {
-                        return; 
-                    }
-                }
-
                 try
                 {
                     Debug.Log("[Title Debug] Screen Click/Touch detected. Calling StartLevel on MainManager.");
@@ -280,10 +278,13 @@ public class Title : MonoBehaviour
 
     private void OnBtnOptionClicked()
     {
-        if (AudioManager.Instance != null) AudioManager.Instance.Play("Sound/ui_button_down");
-        if (TitleOptionPopup.Instance != null)
+        if (ui != null)
         {
-            TitleOptionPopup.Instance.Show();
+            ui.OnBtnOptionClicked();
+        }
+        else if (TitleOptionPopup.Instance != null)
+        {
+            TitleOptionPopup.Instance.Toggle();
         }
     }
 

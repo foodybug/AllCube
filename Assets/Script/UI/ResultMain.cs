@@ -28,6 +28,18 @@ public class ResultMain : MonoBehaviour
     // 실시간 서버 랭킹 결과 문자열 캐싱
     private string m_serverLeaderboardText = "";
 
+    // New Best 숫자 0.5초 간격 색상 반짝임 연출용 변수
+    private static readonly string[] s_blinkColorHexes = new string[]
+    {
+        "#FFFF00", // Yellow
+        "#00FFFF", // Cyan
+        "#FF3399", // Neon Pink
+        "#00FF66", // Lime Green
+        "#FF9900", // Bright Orange
+        "#FFFFFF"  // White
+    };
+    private int m_lastBlinkIndex = -1;
+
     void Awake()
     {
         if (s_Instance != null && s_Instance != this)
@@ -145,8 +157,10 @@ public class ResultMain : MonoBehaviour
         // 1. 가상 카메라 앵커 위치 갱신 (Y축으로 빠르게 상승하고 X축을 Sine파로 리드미컬하게 흔듦)
         if (m_goVirtualCamera != null)
         {
-            m_virtualCameraY += Time.deltaTime * 3.6f; 
-            float virtualCameraX = Mathf.Sin(Time.time * 0.25f) * 3.5f; 
+            m_virtualCameraY += Time.deltaTime * 3.6f;
+
+            float virtualCameraX = Mathf.Sin(Time.time * 0.25f) * 3.5f;
+
             m_goVirtualCamera.transform.position = new Vector3(virtualCameraX, m_virtualCameraY, 0f);
 
             // Parallax 정적 배경 스크롤 일괄 업데이트 (통통 튀지 않고 우아하게 흘러감)
@@ -166,9 +180,11 @@ public class ResultMain : MonoBehaviour
         if (slowTimeHue < 0f) slowTimeHue += 1.0f;
 
         Color farColor = Color.HSVToRGB(slowTimeHue, 0.5f, 0.28f);
-        
+
+
         Camera cam = CameraManager.GetMainCamera();
-        
+
+
         if (cam != null)
         {
             CameraManager.ApplyAspect(cam);
@@ -187,6 +203,18 @@ public class ResultMain : MonoBehaviour
             Color midColor = Color.HSVToRGB(midHue, 0.6f, 0.35f);
             midColor.a = 0.45f;
             m_midCubeMaterial.color = midColor;
+        }
+
+        // 4. New Best 달성 시 숫자 0.5초 간격 색상 반짝임 실시간 갱신
+        bool isNewBest = (MainManager.lastMaxHeight >= MainManager.lastBestHeight && MainManager.lastMaxHeight > 0);
+        if (isNewBest)
+        {
+            int currentBlinkIndex = Mathf.FloorToInt(Time.time / 0.5f) % s_blinkColorHexes.Length;
+            if (currentBlinkIndex != m_lastBlinkIndex)
+            {
+                m_lastBlinkIndex = currentBlinkIndex;
+                UpdateResultText();
+            }
         }
     }
 
@@ -256,7 +284,13 @@ public class ResultMain : MonoBehaviour
             }
         }
 
-        if (ui.textResultTime != null) ui.textResultTime.verticalOverflow = VerticalWrapMode.Overflow;
+        if (ui.textResultTime != null)
+        {
+            ui.textResultTime.verticalOverflow = VerticalWrapMode.Overflow;
+            ui.textResultTime.horizontalOverflow = HorizontalWrapMode.Overflow;
+            ui.textResultTime.supportRichText = true;
+            // ui.textResultTime.lineSpacing = 1.35f; // 줄간격을 여유롭게 확장
+        }
 
         if (UI_Play.eLevelClearType.eLevelClearType_None == MainManager.lastClearType)
         {
@@ -319,12 +353,32 @@ public class ResultMain : MonoBehaviour
     {
         if (ui == null) return;
 
+        int baseFontSize = (ui.textResultTime != null) ? ui.textResultTime.fontSize : 28;
+        if (baseFontSize <= 0) baseFontSize = 28;
+
+        int numFontSize = baseFontSize + 4; // 숫자는 같은 행 글자보다 4 더 크게
+
+        int rankBaseSize = Mathf.RoundToInt(baseFontSize * 1.5f); // 중간 랭크/순위비율 표시는 1.5배 더 크게 (예: 28 * 1.5 = 42pt)
+        int rankNumSize = rankBaseSize + 4; // 랭크 수치 숫자는 4 더 크게 (예: 46pt)
+
         int nMin = MainManager.lastGameTime / 60;
         int nSec = MainManager.lastGameTime % 60;
+
+        bool isNewBest = (MainManager.lastMaxHeight >= MainManager.lastBestHeight && MainManager.lastMaxHeight > 0);
+
+        string heightNumStr = MainManager.lastMaxHeight.ToString();
+        string bestNumStr = MainManager.lastBestHeight.ToString();
         string bestSuffix = "";
-        if (MainManager.lastMaxHeight >= MainManager.lastBestHeight && MainManager.lastMaxHeight > 0)
+
+        if (isNewBest)
         {
-            bestSuffix = " <color=yellow>[NEW BEST!]</color>";
+            int colorIndex = Mathf.FloorToInt(Time.time / 0.5f) % s_blinkColorHexes.Length;
+            string curBlinkColor = s_blinkColorHexes[colorIndex];
+
+            // new best 상황에선 새로운 기록의 숫자 부분을 0.5초 간격으로 반짝이는 색상으로 표현
+            heightNumStr = $"<color={curBlinkColor}>{MainManager.lastMaxHeight}</color>";
+            bestNumStr = $"<color={curBlinkColor}>{MainManager.lastBestHeight}</color>";
+            bestSuffix = $" <size={rankBaseSize}><color={curBlinkColor}>[NEW BEST!]</color></size>";
         }
 
         string rankHeader = "";
@@ -334,29 +388,37 @@ public class ResultMain : MonoBehaviour
         {
             // 1. 서버 실시간 랭킹 연동 성공
             string suffix = GetRankSuffix(MainManager.lastServerRank);
-            rankHeader = string.Format("<size=22><color=yellow><b>Rank: {0}{1} (Top {2:F2}%)</b></color></size>", 
-                MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
+            rankHeader = string.Format(
+                "<size={0}><color=yellow><b>Rank: <size={1}>{2}</size>{3} (Top <size={1}>{4:F1}</size>%)</b></color></size>",
+                rankBaseSize, rankNumSize, MainManager.lastServerRank, suffix, MainManager.lastServerPercentage);
             leaderboardBody = m_serverLeaderboardText;
         }
         else if (MainManager.lastServerRank == -2)
         {
             // 2. 서버 연동 실패 (최종 로컬 폴백)
             string rankStr = GetWorldRankString(MainManager.lastMaxHeight);
-            rankHeader = string.Format("<size=22><color=yellow><b>{0}</b></color></size>", rankStr);
+            rankHeader = string.Format("<size={0}><color=yellow><b>{1}</b></color></size>", rankBaseSize, rankStr);
             leaderboardBody = "Server offline. Shown local estimation.";
         }
         else
         {
             // 3. 서버 응답 대기 상태 (Connecting...)
-            rankHeader = "<size=22><color=gray><b>Connecting Server...</b></color></size>";
+            rankHeader = string.Format("<size={0}><color=gray><b>Connecting Server...</b></color></size>", rankBaseSize);
             leaderboardBody = "Loading global leaderboard rankings...";
         }
 
-        string textContent = string.Format("{0:D2}:{1:D2}\nHeight {2}m  Best {3}m{4}\n\n{5}\n\n{6}", 
-            nMin, nSec, MainManager.lastMaxHeight, MainManager.lastBestHeight, bestSuffix, rankHeader, leaderboardBody);
+        string timeStr = string.Format("Time\n<size={0}>{1:D2}:{2:D2}</size>", numFontSize, nMin, nSec);
+        
+        // 현재 height와 best height를 나타내는 string을 개행해서 다른 줄로 표시
+        string heightStr = string.Format("Height <size={0}>{1}</size>m\nBest <size={0}>{2}</size>m{3}", 
+            numFontSize, heightNumStr, bestNumStr, bestSuffix);
+
+        string textContent = string.Format("{0}\n\n{1}\n\n{2}\n\n{3}", 
+            timeStr, heightStr, rankHeader, leaderboardBody);
 
         if (ui.textResultTime != null)
         {
+            ui.textResultTime.supportRichText = true;
             ui.textResultTime.text = textContent;
             ui.textResultTime.enabled = true;
         }
@@ -378,7 +440,7 @@ public class ResultMain : MonoBehaviour
             request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
             request.certificateHandler = new BypassCertificateHandler(); // 모바일 단말 SSL 검증 차단 회피
             request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("User-Agent", "AllCube-UnityClient/1.0");
+            request.SetRequestHeader("User-Agent", "PeakLeas-UnityClient/1.0");
             request.timeout = 10; // 서버 콜드 스타트 및 모바일 네트워크 지연 대비 (10초 확장)
 
             yield return request.SendWebRequest();
@@ -399,6 +461,10 @@ public class ResultMain : MonoBehaviour
                         System.Text.StringBuilder sb = new System.Text.StringBuilder();
                         if (res.leaderboardWindow != null && res.leaderboardWindow.Count > 0)
                         {
+                            int baseFontSize = (ui != null && ui.textResultTime != null) ? ui.textResultTime.fontSize : 28;
+                            if (baseFontSize <= 0) baseFontSize = 28;
+                            int numFontSize = baseFontSize + 4; // 숫자는 4 더 크게 연산
+
                             int entryCount = 0;
                             foreach (var entry in res.leaderboardWindow)
                             {
@@ -412,11 +478,11 @@ public class ResultMain : MonoBehaviour
 
                                 if (entry.isSelf)
                                 {
-                                    sb.AppendLine(string.Format("<color=yellow><b>▶ {0}{1} YOU {2}m ◀</b></color>", entry.rank, suffix, entry.height));
+                                    sb.AppendLine(string.Format("<color=yellow>▶ <size={0}>{1}</size>{2} YOU <size={0}>{3}</size>m ◀</color>", numFontSize, entry.rank, suffix, entry.height));
                                 }
                                 else
                                 {
-                                    sb.AppendLine(string.Format("{0}{1}  {2}  {3}m", entry.rank, suffix, nameStr, entry.height));
+                                    sb.AppendLine(string.Format("<size={0}>{1}</size>{2}  {3}  <size={0}>{4}</size>m", numFontSize, entry.rank, suffix, nameStr, entry.height));
                                 }
                                 entryCount++;
                             }
@@ -496,7 +562,8 @@ public class ResultMain : MonoBehaviour
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(m_goBackgroundContainer, UnityEngine.SceneManagement.SceneManager.GetActiveScene());
 
         Camera cam = CameraManager.GetMainCamera();
-        
+
+
         if (cam == null)
         {
             Debug.LogError("[ResultMain] Camera is missing in scene! Background creation aborted.");
@@ -562,7 +629,8 @@ public class ResultMain : MonoBehaviour
         {
             float maxSpawnX = MapManager.Instance.MaxSpawnX;
             float minSpawnX = MapManager.Instance.MinSpawnX;
-            scrollWidth = (maxSpawnX - minSpawnX) * 1.0f; 
+            scrollWidth = (maxSpawnX - minSpawnX) * 1.0f;
+
         }
 
         float totalWidth = scrollWidth * 1.2f;
@@ -644,7 +712,8 @@ public class ResultMain : MonoBehaviour
         m_playerMaterials.Clear();
 
         Camera cam = CameraManager.GetMainCamera();
-        
+
+
         if (cam != null)
         {
             Transform farBg = cam.transform.Find("Far_Background_Quad");

@@ -35,7 +35,7 @@ public class InGameDebugConsole : MonoBehaviour
 
     void Awake()
     {
-        m_logFilePath = Path.Combine(Application.persistentDataPath, "allcube_crash_log.txt");
+        m_logFilePath = Path.Combine(Application.persistentDataPath, "peakleas_crash_log.txt");
         try
         {
             File.AppendAllText(m_logFilePath, $"\n\n==================== [App Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}] ====================\n");
@@ -128,7 +128,7 @@ public class InGameDebugConsole : MonoBehaviour
         float panelY = 15f;
 
         GUI.backgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.95f);
-        GUI.Box(new Rect(panelX, panelY, panelWidth, panelHeight), "=== AllCube In-Game & Crash Logger ===");
+        GUI.Box(new Rect(panelX, panelY, panelWidth, panelHeight), "=== PeakLeas In-Game & Crash Logger ===");
 
         // Display Log File Location
         GUIStyle pathStyle = new GUIStyle(GUI.skin.label);

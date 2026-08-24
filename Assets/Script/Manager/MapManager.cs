@@ -17,7 +17,8 @@ public class MapManager : MonoBehaviour
         eMapProp_Blink,
         eMapProp_Laser,
         eMapProp_Stationary,
-        eMapProp_Homing
+        eMapProp_Homing,
+        eMapProp_Crazy
     }
 
     static MapManager m_instance;
@@ -423,9 +424,10 @@ public class MapManager : MonoBehaviour
     public Material GetSharedMaterial(int index)
     {
         if (m_sharedMaterials == null || m_sharedMaterials.Length == 0) return null;
-        if (index >= 0 && index < m_sharedMaterials.Length && m_sharedMaterials[index] != null)
+        int safeIndex = Mathf.Abs(index) % m_sharedMaterials.Length;
+        if (m_sharedMaterials[safeIndex] != null)
         {
-            return m_sharedMaterials[index];
+            return m_sharedMaterials[safeIndex];
         }
         return m_sharedMaterials[0];
     }
@@ -526,10 +528,16 @@ public class MapManager : MonoBehaviour
                 }
                 EnemyGlitchTextureEffect.AttachTo(go);
                 break;
+
+            case eMapProp.eMapProp_Crazy:
+                go.name = $"CubeCrazy_X{x}_Y{y}";
+                go.AddComponent<CubeCrazy>();
+                EnemyGlitchTextureEffect.AttachTo(go);
+                break;
         }
 
-        // Homing 추적 블록 및 MoveX 이동 블록은 X축 위치가 인피니트 스크롤에 의해 고정되지 않도록 제외
-        if (m_enableInfiniteScroll && !isFlying && prop != eMapProp.eMapProp_Homing && prop != eMapProp.eMapProp_MoveX)
+        // Homing 추적 블록 및 MoveX 이동 블록, Crazy 광란 블록은 X축 위치가 인피니트 스크롤에 의해 고정되지 않도록 제외
+        if (m_enableInfiniteScroll && !isFlying && prop != eMapProp.eMapProp_Homing && prop != eMapProp.eMapProp_MoveX && prop != eMapProp.eMapProp_Crazy)
         {
             InfiniteScrollObject scroll = go.AddComponent<InfiniteScrollObject>();
             Transform playerT = CameraManager.Instance != null ? CameraManager.Instance.Target : null;
@@ -827,6 +835,7 @@ public class MapManager : MonoBehaviour
 
                             if (tileName.Contains("normal")) prop = eMapProp.eMapProp_Normal;
                             else if (tileName.Contains("laser")) prop = eMapProp.eMapProp_Laser;
+                            else if (tileName.Contains("crazy")) prop = eMapProp.eMapProp_Crazy;
                             else if (tileName.Contains("break")) prop = eMapProp.eMapProp_Break;
                             else if (tileName.Contains("movex")) prop = eMapProp.eMapProp_MoveX;
                             else if (tileName.Contains("movey")) prop = eMapProp.eMapProp_MoveY;
@@ -979,8 +988,8 @@ public class MapManager : MonoBehaviour
             m_listCube.Add(flyingFastCube);
         }
 
-        // 설정된 주기에 따라 화면 외곽에서 타겟팅 경고 레이저를 쏘며 날아오는 CubeLaser 장애물 생성 (20단계 = 400m 이상부터 등장)
-        if (y >= 400 && y % 18 == 0)
+        // 설정된 주기에 따라 화면 외곽에서 타겟팅 경고 레이저를 쏘며 날아오는 CubeLaser 장애물 생성 (90m 이상부터 등장)
+        if (y >= 90 && y % 15 == 0)
         {
             GameObject playerGo = CameraManager.Instance.Target != null ? CameraManager.Instance.Target.gameObject : null;
             float playerWorldX = 0f;
@@ -994,6 +1003,13 @@ public class MapManager : MonoBehaviour
 
             GameObject laserCube = _CreateCube(0, y, eMapProp.eMapProp_Laser, rowScrollWidth, false, true, startWorldX);
             m_listCube.Add(laserCube);
+        }
+
+        // 설정된 주기에 따라 무작위 빠른 방향 이동을 수행하는 CubeCrazy 장애물 생성 (150m 이상부터 등장, 출현 빈도 축소: 60m 주기)
+        if (y >= 150 && y % 60 == 0)
+        {
+            int randomX = Random.Range(minX + 2, maxX + 1);
+            m_listCube.Add(_CreateCube(randomX, y, eMapProp.eMapProp_Crazy, rowScrollWidth, false));
         }
 
         // 보석(Coin) 배치 (설정된 주기이며 장애물이 생성되지 않는 칸일 때만 스폰 - 보석 수량 추가 2배 증가: 총 4개 스폰)

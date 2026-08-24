@@ -22,6 +22,8 @@ public class UI_Play : MonoBehaviour
     private float m_fPauseTime = 0.0f;
     private bool m_bHelpMsgBoxNext = false;
     private float m_comboPulseTimer = 0f;
+    private float m_jumpsPulseTimer = 0f;
+    private float m_jumpsPulseIntensity = 1f;
     private int m_lastDisplayCombo = 0;
 
     public bool bPauseTime { get { return m_bPauseTime; } }
@@ -123,41 +125,10 @@ public class UI_Play : MonoBehaviour
                     SetPlayStats(MapManager.Instance.TotalCoinsCollected, player.JumpCount);
                 }
             }
+            UpdatePulseEffects();
         }
         else
             return;
-
-        // Jumps UI warning pulse effect (Under 3 jumps left)
-        if (ui.textJumps != null && ui.textJumps.gameObject.activeInHierarchy)
-        {
-            if (m_nCurrentJumps <= 3)
-            {
-                float pulse = 1.0f + Mathf.Abs(Mathf.Sin(Time.realtimeSinceStartup * 10f)) * 0.25f;
-                ui.textJumps.transform.localScale = new Vector3(pulse, pulse, 1f);
-                ui.textJumps.color = Color.red;
-            }
-            else
-            {
-                ui.textJumps.transform.localScale = Vector3.one;
-                ui.textJumps.color = Color.white;
-            }
-        }
-
-        // Combo text pulse & color cycle animation
-        if (m_comboPulseTimer > 0f && ui.textCombo != null)
-        {
-            m_comboPulseTimer -= Time.deltaTime;
-            float scale = 1.0f + Mathf.Max(0f, m_comboPulseTimer) * 1.5f; // 1.0 ~ 1.45배 펄스
-            ui.textCombo.transform.localScale = new Vector3(scale, scale, 1f);
-            
-            // 색상 변화 (금색과 빨간색 번갈아)
-            ui.textCombo.color = Color.Lerp(Color.yellow, Color.red, Mathf.PingPong(Time.time * 10f, 1f));
-        }
-        else if (ui.textCombo != null)
-        {
-            ui.textCombo.transform.localScale = Vector3.one;
-            ui.textCombo.color = Color.yellow;
-        }
 
         // Height UI Best record breaking pulse & color shift effect
         int levelIdx = m_nLevelBuff - 1;
@@ -258,6 +229,68 @@ public class UI_Play : MonoBehaviour
         if (ui.textTime != null) ui.textTime.text = strTimeRes + strTime;
     }
 
+    private Vector3 m_initialJumpsScale = Vector3.one;
+    private Vector3 m_initialComboScale = Vector3.one;
+    private int m_baseComboFontSize = 28;
+    private bool m_isPlayUiScalesCached = false;
+
+    private void CachePlayUiScales()
+    {
+        if (m_isPlayUiScalesCached) return;
+        if (ui.textJumps != null) m_initialJumpsScale = ui.textJumps.transform.localScale;
+        if (ui.textCombo != null)
+        {
+            m_initialComboScale = ui.textCombo.transform.localScale;
+            m_baseComboFontSize = ui.textCombo.fontSize;
+            ui.textCombo.verticalOverflow = VerticalWrapMode.Overflow;
+            ui.textCombo.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+        m_isPlayUiScalesCached = true;
+    }
+
+    private void UpdatePulseEffects()
+    {
+        CachePlayUiScales();
+
+        // Jumps UI pulse effect (Gain pulse or Low Jumps warning pulse)
+        if (ui.textJumps != null && ui.textJumps.gameObject.activeInHierarchy)
+        {
+            if (m_jumpsPulseTimer > 0f)
+            {
+                m_jumpsPulseTimer -= Time.deltaTime;
+                float progress = Mathf.Max(0f, m_jumpsPulseTimer) / 0.22f;
+                float pulse = 1.0f + progress * 0.10f * m_jumpsPulseIntensity; // 아주 살짝(약 10%~13%)만 커지는 미세하고 은은한 연출
+                ui.textJumps.transform.localScale = new Vector3(m_initialJumpsScale.x * pulse, m_initialJumpsScale.y * pulse, m_initialJumpsScale.z);
+                ui.textJumps.color = Color.white;
+            }
+            else if (m_nCurrentJumps <= 3)
+            {
+                float pulse = 1.0f + Mathf.Abs(Mathf.Sin(Time.realtimeSinceStartup * 10f)) * 0.25f;
+                ui.textJumps.transform.localScale = new Vector3(m_initialJumpsScale.x * pulse, m_initialJumpsScale.y * pulse, m_initialJumpsScale.z);
+                ui.textJumps.color = Color.red;
+            }
+            else
+            {
+                ui.textJumps.transform.localScale = m_initialJumpsScale;
+                ui.textJumps.color = Color.white;
+            }
+        }
+
+        // Combo text pulse & color cycle animation
+        if (m_comboPulseTimer > 0f && ui.textCombo != null)
+        {
+            m_comboPulseTimer -= Time.deltaTime;
+            float pulse = 1.0f + Mathf.Max(0f, m_comboPulseTimer) * 0.3f;
+            ui.textCombo.transform.localScale = new Vector3(m_initialComboScale.x * pulse, m_initialComboScale.y * pulse, m_initialComboScale.z);
+            ui.textCombo.color = Color.Lerp(Color.yellow, Color.red, Mathf.PingPong(Time.time * 10f, 1f));
+        }
+        else if (ui.textCombo != null)
+        {
+            ui.textCombo.transform.localScale = m_initialComboScale;
+            ui.textCombo.color = Color.yellow;
+        }
+    }
+
     public void SetPlayInfo(int nLevel, int nCoin, int nJumps)
     {
         if (ui.textPlayInfo != null && false == ui.textPlayInfo.gameObject.activeInHierarchy)
@@ -265,7 +298,10 @@ public class UI_Play : MonoBehaviour
         if (ui.textHeight != null && false == ui.textHeight.gameObject.activeInHierarchy)
             ui.textHeight.gameObject.SetActive(true);
         if (ui.textCombo != null)
+        {
+            if (m_isPlayUiScalesCached) ui.textCombo.fontSize = m_baseComboFontSize;
             ui.textCombo.gameObject.SetActive(false);
+        }
 
         m_nLevelBuff = nLevel;
         m_nMaxHeightThisRun = 0;
@@ -312,6 +348,14 @@ public class UI_Play : MonoBehaviour
             return;
         }
 
+        // 점프 횟수가 획득/증가했을 때 은은하고 살짝 튀어 오르는 연출 기동
+        if (m_lastJumps >= 0 && nJumps > m_lastJumps)
+        {
+            int jumpDelta = nJumps - m_lastJumps;
+            m_jumpsPulseTimer = 0.22f; // 은은하게 0.22초 기동
+            m_jumpsPulseIntensity = Mathf.Min(1.3f, 1.0f + jumpDelta * 0.05f); // 미세한 강도 차이 (최대 1.3배)
+        }
+
         m_lastCoin = nCoin;
         m_lastCurrentHeight = currentHeight;
         m_lastJumps = nJumps;
@@ -338,10 +382,12 @@ public class UI_Play : MonoBehaviour
 
         string strLevel = "Level " + m_nLevelBuff.ToString();
         string strJewel = string.Format("Jewel {0:n0}", nCoin);
-        string strHeight = string.Format("Height {0}m", currentHeight);
+        string strHeight = string.Format("Height\n<size=36>{0}m</size>", currentHeight);
+        string strJumps = string.Format("Jumps\n<size=36>{0:n0}</size>", nJumps);
 
         if (ui.textHeight != null)
         {
+            ui.textHeight.supportRichText = true;
             ui.textHeight.text = strHeight;
             if (false == ui.textHeight.gameObject.activeInHierarchy)
             {
@@ -350,8 +396,9 @@ public class UI_Play : MonoBehaviour
 
             if (ui.textJumps != null)
             {
+                ui.textJumps.supportRichText = true;
                 if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel;
-                ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
+                ui.textJumps.text = strJumps;
                 if (false == ui.textJumps.gameObject.activeInHierarchy)
                 {
                     ui.textJumps.gameObject.SetActive(true);
@@ -359,7 +406,6 @@ public class UI_Play : MonoBehaviour
             }
             else
             {
-                string strJumps = string.Format("Jumps {0:n0}", nJumps);
                 if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strJumps;
             }
         }
@@ -367,8 +413,9 @@ public class UI_Play : MonoBehaviour
         {
             if (ui.textJumps != null)
             {
+                ui.textJumps.supportRichText = true;
                 if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight;
-                ui.textJumps.text = string.Format("Jumps {0:n0}", nJumps);
+                ui.textJumps.text = strJumps;
                 if (false == ui.textJumps.gameObject.activeInHierarchy)
                 {
                     ui.textJumps.gameObject.SetActive(true);
@@ -376,7 +423,6 @@ public class UI_Play : MonoBehaviour
             }
             else
             {
-                string strJumps = string.Format("Jumps {0:n0}", nJumps);
                 if (ui.textPlayInfo != null) ui.textPlayInfo.text = strLevel + "\n" + strJewel + "\n" + strHeight + "\n" + strJumps;
             }
         }
@@ -394,18 +440,19 @@ public class UI_Play : MonoBehaviour
             rtCombo.anchorMax = new Vector2(0.5f, 1.0f);
             rtCombo.pivot = new Vector2(0.5f, 1.0f);
 
-            float targetY = -90f; // 기본 상단 Y 위치
+            float targetY = -110f; // 기존 -90f에서 20px 아래쪽으로 이동(-110px)
             if (ui.textJumps != null)
             {
                 RectTransform rtJumps = ui.textJumps.GetComponent<RectTransform>();
                 if (rtJumps != null)
                 {
-                    targetY = rtJumps.anchoredPosition.y - 45f; // Jump UI보다 45px 아래로 넉넉하게 배치
+                    targetY = rtJumps.anchoredPosition.y - 65f; // 기존 -45f에서 20px 아래쪽으로 배치(-65px)
                 }
             }
 
             rtCombo.anchoredPosition = new Vector2(0f, targetY);
             ui.textCombo.alignment = TextAnchor.UpperCenter;
+            ui.textCombo.transform.localScale = Vector3.one; // 선명한 폰트 출력을 위해 localScale = 1.0 유지가 선명함의 정석
         }
     }
 
@@ -416,32 +463,28 @@ public class UI_Play : MonoBehaviour
             AutoAssignComponents();
         }
 
+        CachePlayUiScales();
+
         if (ui.textCombo != null)
         {
-            SetupComboPosition();
             if (comboCount > 0)
             {
+                int extraSize = comboCount / 3; // 3의 배수마다 1씩 증가
+                ui.textCombo.fontSize = m_baseComboFontSize + extraSize;
                 ui.textCombo.text = $"COMBO x{comboCount}";
                 if (!ui.textCombo.gameObject.activeInHierarchy)
                 {
                     ui.textCombo.gameObject.SetActive(true);
                 }
-                
+
                 if (comboCount > m_lastDisplayCombo)
                 {
                     m_comboPulseTimer = 0.3f; // 0.3초 동안 펄스 효과 기동
-                    
-                    if (comboCount >= 3 && comboCount % 3 == 0)
-                    {
-                        if (AudioManager.Instance != null)
-                        {
-                            AudioManager.Instance.Play("Sound/coin_eff", 0.4f, 1.2f);
-                        }
-                    }
                 }
             }
             else
             {
+                ui.textCombo.fontSize = m_baseComboFontSize; // 콤보 초기화 시 원래 사이즈로 복원
                 ui.textCombo.text = "";
                 if (ui.textCombo.gameObject.activeInHierarchy)
                 {
@@ -924,7 +967,8 @@ public class UI_Play : MonoBehaviour
         if (ui.texTimeIcon == null) ui.texTimeIcon = FindChildByName<RawImage>("texTimeIcon");
         if (ui.textJumps == null) ui.textJumps = FindChildByName<Text>("textJumps");
         if (ui.textHeight == null) ui.textHeight = FindChildByName<Text>("textHeight");
-        
+
+
         if (ui.textCombo == null)
         {
             ui.textCombo = FindChildByName<Text>("textCombo");
@@ -933,14 +977,17 @@ public class UI_Play : MonoBehaviour
                 GameObject goCombo = GameObject.Instantiate(ui.textJumps.gameObject, ui.textJumps.transform.parent);
                 goCombo.name = "textCombo";
                 ui.textCombo = goCombo.GetComponent<Text>();
-                
+
+
                 RectTransform rtJumps = ui.textJumps.GetComponent<RectTransform>();
                 RectTransform rtCombo = ui.textCombo.GetComponent<RectTransform>();
                 if (rtJumps != null && rtCombo != null)
                 {
-                    rtCombo.anchoredPosition = rtJumps.anchoredPosition + new Vector2(0f, -40f);
+                    rtCombo.anchoredPosition = rtJumps.anchoredPosition + new Vector2(0f, -60f); // 20px 아래쪽에 생성
                 }
-                
+
+
+                ui.textCombo.transform.localScale = Vector3.one; // 선명한 폰트 출력을 위해 localScale = 1.0 유지
                 ui.textCombo.color = Color.yellow;
                 ui.textCombo.text = "";
                 ui.textCombo.gameObject.SetActive(false);

@@ -30,19 +30,29 @@ public class OptionPopupPrefabGenerator
 
         string prefabPath = "Assets/Resources/UI/TitleOptionPopup.prefab";
 
+        // Temporary Canvas for proper RectTransform anchor initialization
+        GameObject tempCanvas = new GameObject("TempCanvas");
+        Canvas c = tempCanvas.AddComponent<Canvas>();
+
+        // Root GameObject
         GameObject root = new GameObject("TitleOptionPopup");
+        root.transform.SetParent(tempCanvas.transform, false);
+
         RectTransform rootRect = root.AddComponent<RectTransform>();
         rootRect.anchorMin = Vector2.zero;
         rootRect.anchorMax = Vector2.one;
         rootRect.offsetMin = Vector2.zero;
         rootRect.offsetMax = Vector2.zero;
+        rootRect.localScale = Vector3.one;
 
         Image overlayImg = root.AddComponent<Image>();
         overlayImg.color = new Color(0f, 0f, 0f, 0.45f);
+        overlayImg.raycastTarget = true;
 
         TitleOptionPopup popupScript = root.AddComponent<TitleOptionPopup>();
+        popupScript.popupRoot = root;
 
-        // 2. Main Dialog Panel
+        // Main Dialog Panel
         GameObject panelObj = new GameObject("OptionPanel");
         panelObj.transform.SetParent(root.transform, false);
 
@@ -60,9 +70,10 @@ public class OptionPopupPrefabGenerator
         outline.effectColor = new Color(0.47f, 0.92f, 0.98f, 0.9f);
         outline.effectDistance = new Vector2(3, -3);
 
-        Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font defaultFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Resources/Font/PretendardVariable.ttf");
+        if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        // 3. Header Text ("SETTINGS")
+        // Header Text ("SETTINGS")
         GameObject headerObj = new GameObject("TextHeader");
         headerObj.transform.SetParent(panelObj.transform, false);
 
@@ -77,26 +88,37 @@ public class OptionPopupPrefabGenerator
         headerText.alignment = TextAnchor.MiddleCenter;
         headerText.fontStyle = FontStyle.Bold;
         headerText.color = new Color(1.0f, 0.93f, 0.49f, 1.0f);
+        headerText.raycastTarget = false;
 
-        // 4. BGM Slider Row
-        CreateSliderRow(panelObj.transform, defaultFont, "BGM Volume", new Vector2(0, 90));
+        // BGM Slider Row
+        Slider bgmSlider;
+        Text bgmValText;
+        CreateSliderRow(panelObj.transform, defaultFont, "BGM Volume", new Vector2(0, 90), out bgmSlider, out bgmValText);
+        popupScript.sliderBgm = bgmSlider;
+        popupScript.textBgmValue = bgmValText;
 
-        // 5. SFX Slider Row
-        CreateSliderRow(panelObj.transform, defaultFont, "SFX Volume", new Vector2(0, -10));
+        // SFX Slider Row
+        Slider sfxSlider;
+        Text sfxValText;
+        CreateSliderRow(panelObj.transform, defaultFont, "SFX Volume", new Vector2(0, -10), out sfxSlider, out sfxValText);
+        popupScript.sliderSfx = sfxSlider;
+        popupScript.textSfxValue = sfxValText;
 
-        // 6. Quit Game Button
-        CreateButton(panelObj.transform, defaultFont, "Btn_QuitGame", "Quit Game", new Vector2(-120, -160), new Vector2(200, 60), new Color(0.92f, 0.35f, 0.35f, 1f));
+        // Quit Game Button
+        Button quitBtn = CreateButton(panelObj.transform, defaultFont, "Btn_QuitGame", "Quit Game", new Vector2(-120, -160), new Vector2(200, 60), new Color(0.92f, 0.35f, 0.35f, 1f));
+        popupScript.btnQuitGame = quitBtn;
 
-        // 7. Close Button
-        CreateButton(panelObj.transform, defaultFont, "Btn_Close", "Close", new Vector2(120, -160), new Vector2(200, 60), new Color(0.47f, 0.92f, 0.98f, 1f));
+        // Close Button
+        Button closeBtn = CreateButton(panelObj.transform, defaultFont, "Btn_Close", "Close", new Vector2(120, -160), new Vector2(200, 60), new Color(0.47f, 0.92f, 0.98f, 1f));
+        popupScript.btnClose = closeBtn;
 
         PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
-        Object.DestroyImmediate(root);
+        Object.DestroyImmediate(tempCanvas);
 
         Debug.Log("[OptionPopupPrefabGenerator] Prefab successfully saved at: " + prefabPath);
     }
 
-    private static void CreateSliderRow(Transform parent, Font font, string labelStr, Vector2 pos)
+    private static void CreateSliderRow(Transform parent, Font font, string labelStr, Vector2 pos, out Slider sliderComp, out Text valueTextComp)
     {
         string rowName = "Row_" + labelStr.Replace(" ", "");
         GameObject rowObj = new GameObject(rowName);
@@ -121,6 +143,7 @@ public class OptionPopupPrefabGenerator
         labelText.fontStyle = FontStyle.Bold;
         labelText.color = Color.white;
         labelText.alignment = TextAnchor.MiddleLeft;
+        labelText.raycastTarget = false;
 
         // Value
         GameObject valObj = new GameObject("Text_Value");
@@ -137,6 +160,8 @@ public class OptionPopupPrefabGenerator
         valText.fontStyle = FontStyle.Bold;
         valText.color = new Color(0.4f, 0.9f, 1.0f, 1.0f);
         valText.alignment = TextAnchor.MiddleRight;
+        valText.raycastTarget = false;
+        valueTextComp = valText;
 
         // Slider Root
         GameObject sliderObj = new GameObject("Slider");
@@ -147,6 +172,7 @@ public class OptionPopupPrefabGenerator
         sliderRect.sizeDelta = new Vector2(440, 24);
 
         Slider slider = sliderObj.AddComponent<Slider>();
+        sliderComp = slider;
 
         Texture roundedTex = AssetDatabase.LoadAssetAtPath<Texture>("Assets/Resources/UI/rounded_box.png");
 
@@ -163,6 +189,7 @@ public class OptionPopupPrefabGenerator
         RawImage bgImg = bgObj.AddComponent<RawImage>();
         if (roundedTex != null) bgImg.texture = roundedTex;
         bgImg.color = new Color(0.12f, 0.18f, 0.26f, 1.0f);
+        bgImg.raycastTarget = false;
 
         // Fill Area
         GameObject fillArea = new GameObject("Fill Area");
@@ -186,6 +213,7 @@ public class OptionPopupPrefabGenerator
         RawImage fillImg = fillObj.AddComponent<RawImage>();
         if (roundedTex != null) fillImg.texture = roundedTex;
         fillImg.color = new Color(0.47f, 0.92f, 0.98f, 1.0f);
+        fillImg.raycastTarget = false;
 
         slider.fillRect = fillRect;
 
@@ -208,6 +236,7 @@ public class OptionPopupPrefabGenerator
         RawImage handleImg = handleObj.AddComponent<RawImage>();
         if (roundedTex != null) handleImg.texture = roundedTex;
         handleImg.color = Color.white;
+        handleImg.raycastTarget = true;
 
         slider.handleRect = handleRect;
         slider.targetGraphic = handleImg;
@@ -217,7 +246,7 @@ public class OptionPopupPrefabGenerator
         slider.value = 1.0f;
     }
 
-    private static void CreateButton(Transform parent, Font font, string objName, string btnText, Vector2 pos, Vector2 size, Color btnColor)
+    private static Button CreateButton(Transform parent, Font font, string objName, string btnText, Vector2 pos, Vector2 size, Color btnColor)
     {
         GameObject btnObj = new GameObject(objName);
         btnObj.transform.SetParent(parent, false);
@@ -230,6 +259,7 @@ public class OptionPopupPrefabGenerator
         Texture roundedTex = AssetDatabase.LoadAssetAtPath<Texture>("Assets/Resources/UI/rounded_box.png");
         if (roundedTex != null) btnImg.texture = roundedTex;
         btnImg.color = btnColor;
+        btnImg.raycastTarget = true;
 
         Button btn = btnObj.AddComponent<Button>();
         btn.targetGraphic = btnImg;
@@ -250,5 +280,8 @@ public class OptionPopupPrefabGenerator
         txt.fontStyle = FontStyle.Bold;
         txt.color = Color.white;
         txt.alignment = TextAnchor.MiddleCenter;
+        txt.raycastTarget = false;
+
+        return btn;
     }
 }
